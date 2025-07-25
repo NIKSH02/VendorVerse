@@ -21,8 +21,7 @@ export default function AuthForm({ isLogin = true, onToggle, onSuccess }) {
     signinOtpVerified,
     isVerifyingSigninOtp,
     resetSigninOtpStates,
-    user,
-    isAuthenticated
+  
   } = useAuth();
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
