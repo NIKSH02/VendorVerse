@@ -100,112 +100,6 @@ const registerUser = asynchandler(async (req, res) => {
     }
 });
 
-const AddProfileDetails = asynchandler(async (req, res) => {
-    const {username} = req.params;
-    if(!username){
-        throw new apiError(400, 'Please provide username');
-    }
-   const channel = await User.aggregate([
-    {
-        $match:{
-            username: username
-        }
-    },
-    {
-        $lookup:{
-            from: 'subscriptions',
-            localField: '_id',
-            foreignField: 'channel',
-            as: 'subscribers'
-        }
-    },{
-        $lookup:{
-            from: 'subscriptions',
-            localField: '_id',
-            foreignField: 'subscriber',
-            as: 'subscribedTo'
-    }
-    },{
-        $addFields:{
-            subscriberCount: {$size: '$subscribers'},
-            subscribedToCount: {$size: '$subscribedTo'},
-            isSubscribed: {
-                $in: [req.user?._id, '$subscribers.subscriber'],
-                then: true,
-                else: false
-            }
-        }
-    },{
-        $project:{
-            username:1,
-            fullname:1,
-            avatar:1,
-            coverImage:1,
-            isSubscribed:1,
-            email:1,
-            subscriberCount:1,
-            subscribedToCount:1
-        }
-    }
-   ])
-   if(!channel?.length){
-       throw new apiError(404, 'Channel not found');
-   }
-    return res.status(200).json(new ApiResponse(200, channel[0], 'Channel details'));
-   
-});
-
-const getWatchhistory = asynchandler(async (req, res) => {
-    const user = await User.aggregate([
-        {
-            $match: {
-                _id : new mongoose.Types.ObjectId(req.user._id)
-            }
-        },
-        {
-            $lookup: {
-                from: 'videos',
-                localField: 'watchHistory',
-                foreignField: '_id',
-                as: 'watchHistory',
-                pipeline:[
-                    {
-                        $lookup:{
-                            from:"users",
-                            localField: "owner",
-                            foreignField: "_id",
-                            as: "owner",
-                            pipeline:[
-                                {
-                                    $project:{
-                                        username:1,
-                                        fullname:1,
-                                        avatar:1
-                                    }
-                                }
-                            ]
-                    }
-                }
-                ]
-
-            }
-            
-        },
-        {
-            $addFields : {
-                owner:{
-                    $first: "$owner"
-                }
-            }
-        },
-       
-    ]); 
-    return res
-    .status(200)
-    .json(new ApiResponse(200, user[0].watchHistory, 'watch History fetched successfully'));
-
-});
-
 // Send OTP for email verification during signup
 const sendEmailVerificationOTP = asynchandler(async (req, res) => {
     const { email, username } = req.body;
@@ -520,8 +414,10 @@ const verifySigninOTP = asynchandler(async (req, res) => {
     await user.save();
 
     // Generate tokens
+	console.log('Generating access token for user:', user.email);
     const accessToken = user.generateAccessToken();
     const refreshToken = user.generateRefreshToken();
+	console.log('Generated tokens:', { accessToken, refreshToken });
 
     // Save refresh token
     user.refresh_token = refreshToken;
@@ -592,8 +488,6 @@ const resendSigninOTP = asynchandler(async (req, res) => {
 
 module.exports = {
     registerUser, 
-    AddProfileDetails, 
-    getWatchhistory,
     sendEmailVerificationOTP,
     verifyEmailOTP,
     resendEmailVerificationOTP,
