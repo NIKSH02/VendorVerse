@@ -13,7 +13,7 @@ import {
   HelpCircle,
   User
 } from 'lucide-react';
-import Navbar from '../components/Navbar';
+import SideBar from '../components/SideBar';
 
 // Dummy data
 const requestsData = [
@@ -231,7 +231,7 @@ const CommunityRequests = () => {
       
       {/* Main Content */}
       <div className="lg:pl-64">
-        <Navbar location={location} />
+        <SideBar location={location} />
         
         {/* Tabs and Filters */}
         <div className="bg-white border-b border-gray-200 px-4 lg:px-6 py-4">

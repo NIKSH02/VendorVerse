@@ -2,7 +2,7 @@ import React from 'react';
 import { Search, Bell, ChevronDown, Menu } from 'lucide-react';
 import AddItem from '../pages/AddItem';
 
-const Navbar = ({ location }) => {
+const SideBar = ({ location }) => {
   return (
     <header className="bg-white border-b border-gray-200 px-4 lg:px-6 py-4">
       <div className="flex items-center justify-between">
@@ -64,4 +64,4 @@ const Navbar = ({ location }) => {
   );
 };
 
-export default Navbar;
+export default SideBar;
