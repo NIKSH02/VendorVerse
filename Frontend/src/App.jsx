@@ -52,7 +52,7 @@ function App() {
           <Routes>
             <Route path="/" element={ <AuthPage />} />
             <Route path="/Global" element={<CommunityRequests />  } />
-            <Route path="productdetail" element={<ProductDetail /> } />
+            <Route path="/productdetail" element={<ProductDetail /> } />
           </Routes>
         </Router>
       </AuthProvider>
