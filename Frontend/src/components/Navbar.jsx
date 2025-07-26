@@ -1,5 +1,6 @@
 import React from 'react';
 import { Search, Bell, ChevronDown, Menu } from 'lucide-react';
+import AddItem from '../pages/AddItem';
 
 const Navbar = ({ location }) => {
   return (
@@ -19,7 +20,8 @@ const Navbar = ({ location }) => {
             <span className="text-sm font-medium">{location}</span>
             <ChevronDown size={16} className="text-gray-400" />
           </div>
-          
+          {/* add itme  */}
+            <AddItem />
           {/* Search */}
           <div className="relative">
             <Search size={20} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
