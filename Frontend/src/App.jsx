@@ -1,9 +1,12 @@
+
 import React, { useState, useEffect } from "react";
 import { LocationProvider } from "./components/LocationProvider";
 import ErrorBoundary from "./components/ErrorBoundary";
 import Navbar from "./components/Navbar";
 import { useLocation } from "./hooks/useLocation";
 import LandingPage from "./pages/LandingPage";
+import CommunityRequests from './pages/CommunityRequests';
+
 
 function AppContent({ theme }) {
   const { location } = useLocation();
@@ -61,7 +64,7 @@ function App() {
         </LocationProvider>
       </ErrorBoundary>
     </div>
-  );
+
 }
 
 export default App;
