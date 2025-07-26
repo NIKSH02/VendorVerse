@@ -6,64 +6,61 @@ import Navbar from "./components/Navbar";
 import { useLocation } from "./hooks/useLocation";
 import LandingPage from "./pages/LandingPage";
 import CommunityRequests from './pages/CommunityRequests';
+import { FaProductHunt } from 'react-icons/fa';
+import ProductDetail from './pages/ProductDetail';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 
 
-function AppContent({ theme }) {
-  const { location } = useLocation();
-  return location ? <LandingPage theme={theme} /> : null;
+// Simple Error Boundary Component
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error('Error caught by boundary:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-gray-100">
+          <div className="text-center p-8">
+            <h1 className="text-2xl font-bold text-red-600 mb-4">Something went wrong</h1>
+            <p className="text-gray-600 mb-4">Please refresh the page to try again.</p>
+            <button 
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700"
+            >
+              Refresh Page
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
 }
 
 function App() {
-  // Initialize theme from localStorage or system preference
-  const [theme, setTheme] = useState(() => {
-    // Check localStorage first
-    const savedTheme = localStorage.getItem('theme');
-    if (savedTheme) {
-      return savedTheme;
-    }
-    // Fall back to system preference
-    return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches 
-      ? "dark" 
-      : "light";
-  });
-
-  // Apply theme to document and save to localStorage
-  useEffect(() => {
-    // Save theme preference
-    localStorage.setItem('theme', theme);
-    
-    // Apply theme class to document
-    if (theme === "dark") {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
-  }, [theme]);
-
-  // Listen for system theme changes
-  useEffect(() => {
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    
-    const handleChange = (e) => {
-      // Only update if user hasn't manually set a preference
-      if (!localStorage.getItem('theme')) {
-        setTheme(e.matches ? 'dark' : 'light');
-      }
-    };
-
-    mediaQuery.addEventListener('change', handleChange);
-    return () => mediaQuery.removeEventListener('change', handleChange);
-  }, []);
-
   return (
-    <div className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 min-h-screen transition-all duration-500">
-      <ErrorBoundary>
-        <LocationProvider>
-          <Navbar theme={theme} setTheme={setTheme} />
-          <AppContent theme={theme} />
-        </LocationProvider>
-      </ErrorBoundary>
-    </div>
+    <ErrorBoundary>
+      <AuthProvider>
+        <Router >
+          <Routes>
+            <Route path="/" element={ <AuthPage />} />
+            <Route path="/Global" element={<CommunityRequests />  } />
+            <Route path="productdetail" element={<ProductDetail /> } />
+          </Routes>
+        </Router>
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }
 
