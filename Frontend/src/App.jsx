@@ -5,6 +5,7 @@ import CommunityRequests from './pages/CommunityRequests';
 import { FaProductHunt } from 'react-icons/fa';
 import ProductDetail from './pages/ProductDetail';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import RawConnectDashboard from './pages/RawConnectDashboard';
 
 
 // Simple Error Boundary Component
@@ -52,7 +53,8 @@ function App() {
           <Routes>
             <Route path="/" element={ <AuthPage />} />
             <Route path="/Global" element={<CommunityRequests />  } />
-            <Route path="/productdetail" element={<ProductDetail /> } />
+            <Route path="productdetail" element={<ProductDetail /> } />
+            <Route path="/Profile" element= { <RawConnectDashboard /> } /> 
           </Routes>
         </Router>
       </AuthProvider>
