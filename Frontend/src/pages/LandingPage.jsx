@@ -2,12 +2,15 @@ import React, { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 import HeroSection from "../components/HeroSection";
+import AddSupplierItemForm from "../components/AddSupplierItemForm";
 import CategoryShowcase from "../components/CategoryShowcase";
 import NewRequestSection from "../components/NewRequestSection";
 import RawItemsSection from "../components/RawItemsSection";
 import SpecialItemsSection from "../components/SpecialItemsSection";
 import HowItWorks from "../components/HowItWorks";
 import Footer from "../components/Footer";
+import Navbar from "../components/Navbar";
+
 
 export default function LandingPage() {
   const [activeSection, setActiveSection] = useState(null);
@@ -107,9 +110,10 @@ export default function LandingPage() {
     <div className="bg-white dark:bg-[#181818] min-h-screen transition-colors duration-300">
       
       <div className="mt-[-32px]">
+        <Navbar />
         <CategoryShowcase onCategoryClick={handleCategoryClick} activeSection={activeSection} />
       </div>
-      <HeroSection />
+      
       <div className="relative scroll-mt-16" id="content-section">
         <AnimatePresence mode="wait">
           {activeSection === "raw" && (
@@ -125,7 +129,6 @@ export default function LandingPage() {
               <RawItemsSection />
             </motion.div>
           )}
-          
           {activeSection === "special" && (
             <motion.div
               ref={specialSectionRef}
@@ -139,7 +142,6 @@ export default function LandingPage() {
               <SpecialItemsSection />
             </motion.div>
           )}
-          
           {activeSection === "request" && (
             <motion.div
               ref={requestSectionRef}
@@ -154,6 +156,8 @@ export default function LandingPage() {
             </motion.div>
           )}
         </AnimatePresence>
+        {/* Add Supplier Item Form - always visible for demo, or restrict as needed */}
+        
       </div>
 
       {/* How It Works Section */}

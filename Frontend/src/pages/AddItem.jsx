@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { addSupplierItem } from '../services/supplierService';
 import { X, Upload, ArrowLeft, ArrowRight, Check } from 'lucide-react';
 
 const AddNewListingModal = ({ isOpen, onClose }) => {
@@ -124,29 +125,52 @@ const AddNewListingModal = ({ isOpen, onClose }) => {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('Form submitted:', formData);
-    alert('Listing added successfully!');
-    onClose();
-    // Reset form
-    setCurrentStep(1);
-    setFormData({
-      itemName: '',
-      description: '',
-      category: '',
-      type: '',
-      imageUrl: [],
-      quantityAvailable: '',
-      unit: '',
-      pricePerUnit: '',
-      deliveryAvailable: false,
-      deliveryFee: '',
-      location: {
-        address: ''
-      }
+    // Prepare FormData for backend
+    const form = new FormData();
+    form.append('itemName', formData.itemName);
+    form.append('description', formData.description);
+    form.append('category', formData.category);
+    form.append('type', formData.type);
+    form.append('quantityAvailable', formData.quantityAvailable);
+    form.append('unit', formData.unit);
+    form.append('pricePerUnit', formData.pricePerUnit);
+    form.append('deliveryAvailable', formData.deliveryAvailable);
+    form.append('deliveryFee', formData.deliveryFee);
+    form.append('location[address]', formData.location.address);
+    // If you have lat/lng, append them too
+    if (formData.location.lat) form.append('location[lat]', formData.location.lat);
+    if (formData.location.lng) form.append('location[lng]', formData.location.lng);
+    // Images: must be sent as 'images' (array)
+    formData.imageUrl.forEach((file) => {
+      form.append('images', file);
     });
-    setImagePreviews([]);
+    try {
+      const res = await addSupplierItem(form);
+      alert('Listing added successfully!\n' + JSON.stringify(res, null, 2));
+      onClose();
+      // Reset form
+      setCurrentStep(1);
+      setFormData({
+        itemName: '',
+        description: '',
+        category: '',
+        type: '',
+        imageUrl: [],
+        quantityAvailable: '',
+        unit: '',
+        pricePerUnit: '',
+        deliveryAvailable: false,
+        deliveryFee: '',
+        location: {
+          address: ''
+        }
+      });
+      setImagePreviews([]);
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to add item');
+    }
   };
 
   if (!isOpen) return null;

@@ -47,7 +47,9 @@ const authAPI = {
         const response = await apiClient.post('/users/send-signin-otp', {
             email
         });
+        console.log(response);
         return response.data;
+        
     },
 
     verifySigninOTP: async (email, otp) => {

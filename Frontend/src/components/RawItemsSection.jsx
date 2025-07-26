@@ -65,7 +65,7 @@ const rawItems = [
 
 function RawItemsSection() {
   return (
-    <section className="w-full py-16 px-4 bg-gray-50 dark:bg-gray-900">
+    <section className="w-full py-16 dark:bg-gray-900">
       <div className="max-w-6xl mx-auto">
         {/* Section Header */}
         <div className="text-center mb-12">
