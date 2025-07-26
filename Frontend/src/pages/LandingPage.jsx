@@ -105,9 +105,11 @@ export default function LandingPage() {
 
   return (
     <div className="bg-white dark:bg-[#181818] min-h-screen transition-colors duration-300">
-      <HeroSection />
-      <CategoryShowcase onCategoryClick={handleCategoryClick} activeSection={activeSection} />
       
+      <div className="mt-[-32px]">
+        <CategoryShowcase onCategoryClick={handleCategoryClick} activeSection={activeSection} />
+      </div>
+      <HeroSection />
       <div className="relative scroll-mt-16" id="content-section">
         <AnimatePresence mode="wait">
           {activeSection === "raw" && (

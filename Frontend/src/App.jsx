@@ -64,7 +64,7 @@ function App() {
         </LocationProvider>
       </ErrorBoundary>
     </div>
-
+  );
 }
 
 export default App;

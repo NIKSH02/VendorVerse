@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { motion, useAnimation, useInView } from 'framer-motion';
 
 const categories = [
@@ -37,53 +37,40 @@ const categories = [
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
       </svg>
     )
+  },
+  {
+    id: 4,
+    title: "AI Chat",
+    description: "Get instant help and answers from our AI assistant.",
+    image: "/vite.svg",
+    gradient: "from-blue-500 via-blue-600 to-blue-700",
+    icon: (
+      <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+      </svg>
+    )
   }
 ];
 
-function CategoryShowcase({ onCategoryClick, activeSection }) {
+const CategoryShowcase = ({ onCategoryClick, activeSection }) => {
   const containerRef = useRef(null);
-
+  // Typewriter effect for heading
+  const fullText = 'Browse by Category';
+  const [typedText, setTypedText] = useState('');
   useEffect(() => {
-    const container = containerRef.current;
-    let scrollPosition = 0;
-    const scrollSpeed = 0.5; // Pixels per frame
-    let animationFrameId;
-
-    const animate = () => {
-      scrollPosition += scrollSpeed;
-      
-      // Reset position when we've scrolled one item width
-      if (scrollPosition >= container.children[0].offsetWidth) {
-        scrollPosition = 0;
-      }
-      
-      // Apply the scroll position
-      container.style.transform = `translateX(-${scrollPosition}px)`;
-      
-      animationFrameId = requestAnimationFrame(animate);
-    };
-
-    // Start the animation
-    animate();
-
-    // Pause animation on hover
-    const handleMouseEnter = () => cancelAnimationFrame(animationFrameId);
-    const handleMouseLeave = () => animate();
-
-    container.addEventListener('mouseenter', handleMouseEnter);
-    container.addEventListener('mouseleave', handleMouseLeave);
-
-    return () => {
-      cancelAnimationFrame(animationFrameId);
-      container.removeEventListener('mouseenter', handleMouseEnter);
-      container.removeEventListener('mouseleave', handleMouseLeave);
-    };
+    let i = 0;
+    const interval = setInterval(() => {
+      setTypedText(fullText.slice(0, i + 1));
+      i++;
+      if (i === fullText.length) clearInterval(interval);
+    }, 70);
+    return () => clearInterval(interval);
   }, []);
 
   return (
     <motion.section 
       id="category-section" 
-      className="relative w-full py-20 overflow-hidden bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800"
+      className="relative w-full pt-0 pb-20 overflow-hidden bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.8 }}
@@ -137,33 +124,28 @@ function CategoryShowcase({ onCategoryClick, activeSection }) {
       <div className="relative max-w-7xl mx-auto px-4">
         {/* Section Header */}
         <motion.div 
-          className="text-center mb-16"
+          className="text-center mb-13"
           initial={{ opacity: 0, y: 50 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.8 }}
         >
           <motion.h2 
-            className="text-4xl font-bold text-gray-900 dark:text-white mb-4"
+            className="text-5xl sm:text-6xl font-extrabold text-black mb-1 tracking-tight flex items-center justify-center gap-2"
             initial={{ opacity: 0, scale: 0.8 }}
             whileInView={{ opacity: 1, scale: 1 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6, delay: 0.2 }}
+            style={{ minHeight: '3.5em' }}
           >
-            Browse by{" "}
-            <motion.span 
-              className="text-orange-500"
-              initial={{ opacity: 0, x: -20 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: 0.4 }}
-            >
-              Category
-            </motion.span>
+            <span className="text-orange-500">
+              {typedText}
+              <span className="animate-pulse">|</span>
+            </span>
           </motion.h2>
           <motion.p 
-            className="text-lg text-gray-600 dark:text-gray-300"
-            initial={{ opacity: 0, y: 20 }}
+            className="text-lg text-gray-600 dark:text-gray-300 mt-[-22px]"
+            initial={{ opacity: 0, y: 5 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6, delay: 0.6 }}
@@ -180,133 +162,135 @@ function CategoryShowcase({ onCategoryClick, activeSection }) {
           viewport={{ once: true }}
           transition={{ duration: 0.8, delay: 0.4 }}
         >
-          {/* Gradient Fade Edges */}
-          <motion.div 
-            className="absolute left-0 top-0 bottom-0 w-32 bg-gradient-to-r from-gray-50 to-transparent dark:from-gray-900 z-10"
-            initial={{ opacity: 0, x: -50 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 1 }}
-          />
-          <motion.div 
-            className="absolute right-0 top-0 bottom-0 w-32 bg-gradient-to-l from-gray-50 to-transparent dark:from-gray-900 z-10"
-            initial={{ opacity: 0, x: 50 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 1 }}
-          />
+          {/* Removed left/right blur gradients and all movement for static cards */}
 
-          {/* Scrolling Container */}
-          <div className="overflow-hidden">
-            <motion.div 
-              ref={containerRef} 
-              className="flex gap-8 py-10 transition-transform duration-1000 ease-linear"
+          <div className="flex items-start justify-center min-h-[100px] pt-0 pb-0 mt-[-80px]">
+            <motion.div
+              ref={containerRef}
+              className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-10 py-10"
+              style={{ width: '100%' }}
               initial={{ x: 100, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
               transition={{ duration: 0.8 }}
             >
-              {/* Duplicate categories for infinite scroll effect */}
-              {[...categories, ...categories].map((category, index) => (
-                <motion.div
-                  key={`${category.id}-${index}`}
-                  className="flex-none w-[240px] sm:w-[280px]"
-                  initial={{ opacity: 0, y: 50 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.5, delay: index * 0.1 }}
-                  animate={{
-                    scale: activeSection === (category.id === 1 ? 'raw' : category.id === 2 ? 'special' : 'request') ? 1.08 : 1
-                  }}
-                  whileHover={{ scale: activeSection === (category.id === 1 ? 'raw' : category.id === 2 ? 'special' : 'request') ? 1.12 : 1.03 }}
-                >
-                  <motion.div 
-                    className="relative bg-white/90 dark:bg-gray-800/90 backdrop-blur-md rounded-2xl overflow-hidden group shadow-lg dark:shadow-orange-500/10"
-                    whileHover={{ y: -5 }}
-                    transition={{ duration: 0.3 }}
+              {categories.map((category, index) => {
+                // For AI Chat, use a different click handler or none
+                const isAIChat = category.id === 4;
+                let sectionKey = category.id === 1 ? 'raw' : category.id === 2 ? 'special' : category.id === 3 ? 'request' : 'ai';
+                return (
+                  <motion.div
+                    key={category.id}
+                    className="flex flex-col items-stretch w-full"
+                    initial={{ opacity: 0, y: 50 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.5, delay: index * 0.1 }}
+                    animate={{
+                      scale: activeSection === sectionKey ? 1.08 : 1
+                    }}
+                    whileHover={{ scale: activeSection === sectionKey ? 1.12 : 1.03 }}
                   >
-                    {/* Circular Background */}
-                    <motion.div 
-                      className={`absolute -right-16 -top-16 w-52 h-52 rounded-full bg-gradient-to-br ${category.gradient}`}
-                      initial={{ scale: 0, opacity: 0 }}
-                      animate={{ scale: 1, opacity: 0.8 }}
-                      transition={{ duration: 0.5 }}
-                    />
-                    
-                    {/* Content */}
-                    <div                     className="relative p-4 sm:p-5 h-[320px] sm:h-[360px] flex flex-col">
-                      {/* Icon */}
-                      <motion.div 
-                        className="mb-4 text-gray-800 dark:text-gray-100 z-10"
-                        initial={{ scale: 0, rotate: -180 }}
-                        animate={{ scale: 1, rotate: 0 }}
-                        transition={{ duration: 0.5, delay: 0.2 }}
-                        whileHover={{ rotate: 360, scale: 1.1 }}
-                      >
-                        {category.icon}
-                      </motion.div>
-                      
-                      {/* Text Content */}
-                      <motion.div 
-                        className="flex-1"
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 0.5, delay: 0.3 }}
-                      >
-                        <motion.h3 
-                          className="relative z-10 mb-2 text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100"
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          transition={{ duration: 0.5, delay: 0.4 }}
-                          whileHover={{ scale: 1.02 }}
-                        >
-                          {category.title}
-                        </motion.h3>
-                        <motion.p 
-                          className="text-sm sm:text-base text-gray-600 dark:text-gray-300 z-10 relative"
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          transition={{ duration: 0.5, delay: 0.5 }}
-                        >
-                          {category.description}
-                        </motion.p>
-                      </motion.div>
+                    <motion.div
+                      className="relative bg-white/90 dark:bg-gray-800/90 rounded-2xl overflow-hidden group shadow-lg dark:shadow-orange-500/10 min-h-[360px] w-full flex flex-col"
+                      whileHover={{ y: -5 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      {/* Circular Background */}
+                      <motion.div
+                        className={`absolute -right-16 -top-16 w-52 h-52 rounded-full bg-gradient-to-br ${category.gradient}`}
+                        initial={{ scale: 0, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 0.8 }}
+                        transition={{ duration: 0.5 }}
+                      />
 
-                      {/* Circular Image */}
-                      <motion.div 
-                        className="absolute bottom-0 right-0 w-40 h-40 sm:w-48 sm:h-48 rounded-tl-full overflow-hidden"
-                        initial={{ scale: 0, x: 100 }}
-                        animate={{ scale: 1, x: 0 }}
-                        transition={{ duration: 0.6, delay: 0.2 }}
-                      >
-                        <motion.img
-                          src={category.image}
-                          alt={category.title}
-                          className="w-full h-full object-cover transform scale-150 origin-top-left"
-                          whileHover={{ scale: 1.7 }}
-                          transition={{ duration: 0.4 }}
-                        />
-                      </motion.div>
+                      {/* Content */}
+                      <div className="relative p-4 sm:p-5 h-[320px] sm:h-[360px] flex flex-col">
+                        {/* Icon */}
+                        <motion.div
+                          className="mb-4 text-gray-800 dark:text-gray-100 z-10"
+                          initial={{ scale: 0, rotate: -180 }}
+                          animate={{ scale: 1, rotate: 0 }}
+                          transition={{ duration: 0.5, delay: 0.2 }}
+                          whileHover={{ rotate: 360, scale: 1.1 }}
+                        >
+                          {category.icon}
+                        </motion.div>
 
-                      {/* Action Button */}
-                      <motion.button 
-                        onClick={() => onCategoryClick(category.id === 1 ? 'raw' : category.id === 2 ? 'special' : 'request')}
-                        className={`mt-3 sm:mt-5 px-4 sm:px-5 py-2 backdrop-blur-sm rounded-xl z-10 relative
-                                 shadow-lg font-semibold text-sm sm:text-base
-                                 ${activeSection === (category.id === 1 ? 'raw' : category.id === 2 ? 'special' : 'request')
-                                   ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white dark:from-orange-600 dark:to-orange-700'
-                                   : 'bg-white/80 text-gray-900 dark:bg-gray-700/50 dark:text-white hover:bg-orange-50 dark:hover:bg-orange-600/30'}`}
-                        whileHover={{ scale: 1.03, boxShadow: "0 8px 20px rgba(0,0,0,0.1)" }}
-                        whileTap={{ scale: 0.97 }}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.4, delay: 0.6 }}
-                      >
-                        {activeSection === (category.id === 1 ? 'raw' : category.id === 2 ? 'special' : 'request')
-                          ? 'Selected'
-                          : 'Explore Now'}
-                      </motion.button>
-                    </div>
+                        {/* Text Content */}
+                        <motion.div
+                          className="flex-1"
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ duration: 0.5, delay: 0.3 }}
+                        >
+                          <motion.h3
+                            className="relative z-10 mb-2 text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ duration: 0.5, delay: 0.4 }}
+                            whileHover={{ scale: 1.02 }}
+                          >
+                            {category.title}
+                          </motion.h3>
+                          <motion.p
+                            className="text-sm sm:text-base text-gray-600 dark:text-gray-300 z-10 relative"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ duration: 0.5, delay: 0.5 }}
+                          >
+                            {category.description}
+                          </motion.p>
+                        </motion.div>
+
+                        {/* Circular Image */}
+                        <motion.div
+                          className="absolute bottom-0 right-0 w-40 h-40 sm:w-48 sm:h-48 rounded-tl-full overflow-hidden"
+                          initial={{ scale: 0, x: 100 }}
+                          animate={{ scale: 1, x: 0 }}
+                          transition={{ duration: 0.6, delay: 0.2 }}
+                        >
+                          <motion.img
+                            src={category.image}
+                            alt={category.title}
+                            className="w-full h-full object-cover transform scale-150 origin-top-left"
+                            transition={{ duration: 0.4 }}
+                          />
+                        </motion.div>
+
+                        {/* Action Button */}
+                        {isAIChat ? (
+                          <motion.a
+                            href="#hero-section"
+                            className="mt-3 sm:mt-5 px-4 sm:px-5 py-2 backdrop-blur-sm rounded-xl z-10 relative shadow-lg font-semibold text-sm sm:text-base bg-gradient-to-r from-blue-500 to-blue-700 text-white hover:from-blue-600 hover:to-blue-800"
+                            whileHover={{ scale: 1.03, boxShadow: "0 8px 20px rgba(0,0,0,0.1)" }}
+                            whileTap={{ scale: 0.97 }}
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.4, delay: 0.6 }}
+                          >
+                            Try AI Chat
+                          </motion.a>
+                        ) : (
+                          <motion.button
+                            onClick={() => onCategoryClick(sectionKey)}
+                            className={`mt-3 sm:mt-5 px-4 sm:px-5 py-2 backdrop-blur-sm rounded-xl z-10 relative shadow-lg font-semibold text-sm sm:text-base
+                              ${activeSection === sectionKey
+                                ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white dark:from-orange-600 dark:to-orange-700'
+                                : 'bg-white/80 text-gray-900 dark:bg-gray-700/50 dark:text-white hover:bg-orange-50 dark:hover:bg-orange-600/30'}`}
+                            whileHover={{ scale: 1.03, boxShadow: "0 8px 20px rgba(0,0,0,0.1)" }}
+                            whileTap={{ scale: 0.97 }}
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.4, delay: 0.6 }}
+                          >
+                            {activeSection === sectionKey ? 'Selected' : 'Explore Now'}
+                          </motion.button>
+                        )}
+                      </div>
+                    </motion.div>
                   </motion.div>
-                </motion.div>
-              ))}
+                );
+              })}
             </motion.div>
           </div>
         </motion.div>
