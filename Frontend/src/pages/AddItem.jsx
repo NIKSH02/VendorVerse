@@ -562,7 +562,7 @@ export default function App() {
 
         <button
           onClick={() => setIsModalOpen(true)}
-          className="px-6 py-3 bg-orange-400 text-white rounded-lg hover:bg-orange-500 transition-colors font-medium"
+          className="px-6 py-3 bg-orange-400 text-white hover:text-orange-400 rounded-lg hover:bg-white transition-colors font-medium"
         >
           + Add New Listing
         </button>
