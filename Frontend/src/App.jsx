@@ -1,6 +1,7 @@
 import React from 'react';
 import { AuthProvider } from './context/AuthContext';
 import AuthPage from "./pages/AuthPage";
+import CommunityRequests from './pages/CommunityRequests';
 
 // Simple Error Boundary Component
 class ErrorBoundary extends React.Component {
@@ -44,6 +45,7 @@ function App() {
     <ErrorBoundary>
       <AuthProvider>
         <AuthPage />
+        <CommunityRequests />
       </AuthProvider>
     </ErrorBoundary>
   );
