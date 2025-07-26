@@ -1,13 +1,9 @@
 const express = require('express');
 const connectDB = require('./src/config/db.js');
 const dotenv = require('dotenv');
-<<<<<<< HEAD
-const app  = require('./src/app.js');
-=======
 const cookieParser = require('cookie-parser');
 const Cors = require('cors');
 const fileUpload = require('express-fileupload');
->>>>>>> origin/sumesh
 
 // Load environment variables from .env file
 dotenv.config();
@@ -15,11 +11,6 @@ dotenv.config();
 // Connect to the database
 connectDB();
 
-<<<<<<< HEAD
-
-
-
-=======
 // Create Express app
 const app = express();
 
@@ -68,7 +59,6 @@ app.use('/api/profile', userProfileRouter);    // Mount the user profile router
 app.use('/api/material-requests', materialRequestRouter);    // Mount the material request router
 app.use('/api/notifications', notificationRouter);    // Mount the notification router
 app.use('/api/negotiations', negotiationRouter);    // Mount the negotiation router
->>>>>>> origin/sumesh
 
 // Define a simple route
 app.get('/', (req, res) => {
