@@ -56,10 +56,10 @@ const CategoryShowcase = () => {
           <AnimatePresence>
             <motion.div
               key="raw-section"
-              initial={{ opacity: 0, y: 80 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 80 }}
-              transition={{ duration: 0.6, ease: 'easeOut' }}
+              initial={{ opacity: 0, scale: 0.7, rotate: -10, y: 100 }}
+              animate={{ opacity: 1, scale: 1, rotate: 0, y: 0 }}
+              exit={{ opacity: 0, scale: 0.7, rotate: 10, y: 100 }}
+              transition={{ type: 'spring', stiffness: 120, damping: 14, duration: 0.7 }}
             >
               <RawItemSection />
             </motion.div>
@@ -97,7 +97,12 @@ const CategoryShowcase = () => {
           <span className="inline-block w-1.5 h-8 sm:h-10 lg:h-12 bg-orange-500 animate-blink ml-1"></span>
         </span>
       </h1>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 w-full max-w-7xl">
+      <motion.div
+        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 w-full max-w-7xl"
+        initial={{ opacity: 0, scale: 0.95, y: 60 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        transition={{ type: 'spring', duration: 0.8, bounce: 0.25 }}
+      >
         {cardsData.map((card, idx) => (
           <Card
             key={idx}
@@ -107,7 +112,7 @@ const CategoryShowcase = () => {
             onExplore={() => setActiveSection(card.section)}
           />
         ))}
-      </div>
+      </motion.div>
       {renderSection()}
       <style>
         {`

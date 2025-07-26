@@ -16,7 +16,9 @@ const AddNewListingModal = ({ isOpen, onClose }) => {
     deliveryAvailable: false,
     deliveryFee: '',
     location: {
-      address: ''
+      address: '',
+      lat: '',
+      lng: ''
     }
   });
 
@@ -106,11 +108,22 @@ const AddNewListingModal = ({ isOpen, onClose }) => {
   };
 
   const isStep2Valid = () => {
-    return formData.quantityAvailable && formData.unit && formData.pricePerUnit;
+    // Must have at least 4 images
+    return (
+      formData.quantityAvailable &&
+      formData.unit &&
+      formData.pricePerUnit &&
+      formData.imageUrl.length >= 4
+    );
   };
 
   const isStep3Valid = () => {
-    return formData.location.address.trim();
+    // Require address, lat, lng
+    return (
+      formData.location.address.trim() &&
+      formData.location.lat &&
+      formData.location.lng
+    );
   };
 
   const nextStep = () => {
@@ -127,6 +140,15 @@ const AddNewListingModal = ({ isOpen, onClose }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    // Validation for images and location
+    if (formData.imageUrl.length < 4) {
+      alert('Please upload at least 4 images.');
+      return;
+    }
+    if (!formData.location.lat || !formData.location.lng) {
+      alert('Please provide both latitude and longitude for the pickup address.');
+      return;
+    }
     // Prepare FormData for backend
     const form = new FormData();
     form.append('itemName', formData.itemName);
@@ -139,10 +161,8 @@ const AddNewListingModal = ({ isOpen, onClose }) => {
     form.append('deliveryAvailable', formData.deliveryAvailable);
     form.append('deliveryFee', formData.deliveryFee);
     form.append('location[address]', formData.location.address);
-    // If you have lat/lng, append them too
-    if (formData.location.lat) form.append('location[lat]', formData.location.lat);
-    if (formData.location.lng) form.append('location[lng]', formData.location.lng);
-    // Images: must be sent as 'images' (array)
+    form.append('location[lat]', formData.location.lat);
+    form.append('location[lng]', formData.location.lng);
     formData.imageUrl.forEach((file) => {
       form.append('images', file);
     });
@@ -164,7 +184,9 @@ const AddNewListingModal = ({ isOpen, onClose }) => {
         deliveryAvailable: false,
         deliveryFee: '',
         location: {
-          address: ''
+          address: '',
+          lat: '',
+          lng: ''
         }
       });
       setImagePreviews([]);
@@ -516,6 +538,36 @@ const AddNewListingModal = ({ isOpen, onClose }) => {
                     placeholder="Enter your pickup address..."
                     required
                   />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Latitude *
+                    </label>
+                    <input
+                      type="number"
+                      value={formData.location.lat}
+                      onChange={(e) => handleInputChange('location.lat', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-400 focus:border-transparent"
+                      placeholder="Latitude"
+                      required
+                      step="any"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Longitude *
+                    </label>
+                    <input
+                      type="number"
+                      value={formData.location.lng}
+                      onChange={(e) => handleInputChange('location.lng', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-400 focus:border-transparent"
+                      placeholder="Longitude"
+                      required
+                      step="any"
+                    />
+                  </div>
                 </div>
               </div>
             )}
