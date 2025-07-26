@@ -1,6 +1,9 @@
 import { useState, useEffect } from "react";
 import { FaEye, FaEyeSlash, FaCheck, FaClock, FaUser, FaEnvelope } from "react-icons/fa";
 import { useAuth } from "../hooks/useAuth";
+import { useNavigate } from "react-router-dom";
+
+
 
 export default function AuthForm({ isLogin = true, onToggle, onSuccess }) {
   const {
@@ -32,6 +35,9 @@ export default function AuthForm({ isLogin = true, onToggle, onSuccess }) {
   const [countdown, setCountdown] = useState(0);
   const [signinEmail, setSigninEmail] = useState("");
   const [signinCountdown, setSigninCountdown] = useState(0);
+
+
+  let navigate = useNavigate();
 
   // Countdown timer effects
   useEffect(() => {
@@ -100,14 +106,9 @@ export default function AuthForm({ isLogin = true, onToggle, onSuccess }) {
         await verifySigninOTP(signinEmail, signinOtp);
         // Signin successful - show success message in purple/ethesis style
         onSuccess?.(
-          'login',
-          '🎉 Signed In Successfully!',
-          `Welcome back! You have been signed in via OTP.`,
-          {
-            color: 'bg-gradient-to-r from-purple-600 to-indigo-500 text-white',
-            border: 'border-2 border-purple-400'
-          }
+           navigate('/Profile')
         );
+       
       } catch (error) {
         console.error('Failed to verify signin OTP:', error);
       }
@@ -152,6 +153,7 @@ export default function AuthForm({ isLogin = true, onToggle, onSuccess }) {
             '🎉 Registration Successful!',
             `Welcome ${username}! Your account has been created successfully. You can now enjoy all the features of our platform!`
           );
+          navigate('/Profile');
           console.log('Registration successful for user:', username);
         } else {
           console.error('Registration failed: No success response from backend');
@@ -183,6 +185,7 @@ export default function AuthForm({ isLogin = true, onToggle, onSuccess }) {
           '🚀 Welcome Back!',
           `Great to see you again, ${username}! You have successfully logged into your account.`
         );
+        navigate('/Profile');
       } catch (error) {
         console.error('Login failed:', error);
       }
