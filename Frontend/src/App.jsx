@@ -1,6 +1,11 @@
 import React from 'react';
 import { AuthProvider } from './context/AuthContext';
 import AuthPage from "./pages/AuthPage";
+import CommunityRequests from './pages/CommunityRequests';
+import { FaProductHunt } from 'react-icons/fa';
+import ProductDetail from './pages/ProductDetail';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+
 
 // Simple Error Boundary Component
 class ErrorBoundary extends React.Component {
@@ -43,7 +48,13 @@ function App() {
   return (
     <ErrorBoundary>
       <AuthProvider>
-        <AuthPage />
+        <Router >
+          <Routes>
+            <Route path="/" element={ <AuthPage />} />
+            <Route path="/Global" element={<CommunityRequests />  } />
+            <Route path="productdetail" element={<ProductDetail /> } />
+          </Routes>
+        </Router>
       </AuthProvider>
     </ErrorBoundary>
   );
