@@ -51,10 +51,10 @@ function App() {
       <AuthProvider>
         <Router >
           <Routes>
-            <Route path="/" element={ <AuthPage />} />
+            <Route path="/authpage" element={ <AuthPage />} />
             <Route path="/Global" element={<CommunityRequests />  } />
             <Route path="/productdetail" element={<ProductDetail /> } />
-             <Route path="/landingpage" element={<LandingPage /> } />
+             <Route path="/" element={<LandingPage /> } />
           </Routes>
         </Router>
       </AuthProvider>

@@ -36,18 +36,17 @@ export default function LocationPopup({ onLocationSet }) {
   if (!show) return null;
 
   return (
-    <div
-      className="fixed inset-0 flex items-center justify-center z-50"
-      style={{ background: "rgba(0,0,0,0.25)" }}
-    >
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      {/* Overlay for blur only, no dark background */}
+      <div className="absolute inset-0 backdrop-blur-sm" />
       <div
-        className="rounded-2xl shadow-xl p-8 w-full max-w-sm"
-        style={{ background: "#fff" }}
+        className="relative rounded-2xl shadow-xl p-8 w-full max-w-sm z-10"
+        style={{ background: "#121214" }}
       >
-        <h2 className="text-2xl font-bold mb-2" style={{ color: "#000" }}>
+        <h2 className="text-2xl font-bold mb-2" style={{ color: "white" }}>
           Welcome!
         </h2>
-        <p className="mb-6 text-base" style={{ color: "#555" }}>
+        <p className="mb-6 text-base" style={{ color: "white" }}>
           Please provide your location to continue.
         </p>
         <button
@@ -65,7 +64,7 @@ export default function LocationPopup({ onLocationSet }) {
         </button>
         <div className="flex items-center my-3">
           <div className="flex-1 h-px bg-[#f5f5f5]" />
-          <span className="mx-2 text-xs text-[#555]">or</span>
+          <span className="mx-2 text-xs text-[white]">or</span>
           <div className="flex-1 h-px bg-[#f5f5f5]" />
         </div>
         <form onSubmit={handleManualSubmit}>
