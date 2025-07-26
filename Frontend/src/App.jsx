@@ -1,10 +1,6 @@
-
-import React, { useState, useEffect } from "react";
-import { LocationProvider } from "./components/LocationProvider";
-import ErrorBoundary from "./components/ErrorBoundary";
-import Navbar from "./components/Navbar";
-import { useLocation } from "./hooks/useLocation";
-import LandingPage from "./pages/LandingPage";
+import React from 'react';
+import { AuthProvider } from './context/AuthContext';
+import AuthPage from "./pages/AuthPage";
 import CommunityRequests from './pages/CommunityRequests';
 import { FaProductHunt } from 'react-icons/fa';
 import ProductDetail from './pages/ProductDetail';
