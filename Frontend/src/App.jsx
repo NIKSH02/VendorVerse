@@ -8,8 +8,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import LandingPage from './pages/LandingPage';
 import AllItemsPage from './pages/AllItemsPage';
 import AboutPage from './pages/AboutPage';
-import SpecialItemsPage from './pages/SpecialItemsPage';
-
+// import SpecialItemsPage from './pages/SpecialItemsPage'; // Removed as it is no longer used
 
 // Simple Error Boundary Component
 class ErrorBoundary extends React.Component {
@@ -57,8 +56,7 @@ function App() {
             <Route path="/authpage" element={ <AuthPage />} />
             <Route path="/Global" element={<CommunityRequests />  } />
             <Route path="/productdetail" element={<ProductDetail /> } />
-            <Route path="/all-items" element={<AllItemsPage />} />
-            <Route path="/special-items" element={<SpecialItemsPage />} />
+            {/* <Route path="/special-items" element={<SpecialItemsPage />} /> Removed as it is no longer used */}
             <Route path="/about" element={<AboutPage />} />
             <Route path="/" element={<LandingPage /> } />
           </Routes>

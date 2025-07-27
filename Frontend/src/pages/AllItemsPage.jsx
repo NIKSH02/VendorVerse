@@ -87,27 +87,42 @@ const allItems = [
   }
 ];
 
-const categories = ['All Items', 'Vegetables', 'Spices', 'Grains'];
+const mainCategories = ['All Items', 'Raw Items', 'Special Items'];
+const rawSubcategories = ['Vegetables', 'Spices', 'Grains'];
+const specialSubcategories = ['Snacks', 'Beverages', 'Sweets']; // Example, adjust as needed
 
 function AllItemsPage() {
-  const [selectedCategory, setSelectedCategory] = useState('All Items');
+  const [mainCategory, setMainCategory] = useState('All Items');
+  const [rawSubcategory, setRawSubcategory] = useState('All');
+  const [specialSubcategory, setSpecialSubcategory] = useState('All');
   const [sortBy, setSortBy] = useState('name');
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Filter and sort items
-  const filteredItems = allItems
-    .filter(item => {
-      const matchesCategory = selectedCategory === 'All Items' || item.category === selectedCategory;
-      const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          item.description.toLowerCase().includes(searchQuery.toLowerCase());
-      return matchesCategory && matchesSearch;
-    })
-    .sort((a, b) => {
-      if (sortBy === 'price') {
-        return parseInt(a.price.replace(/[^0-9]/g, '')) - parseInt(b.price.replace(/[^0-9]/g, ''));
-      }
-      return a[sortBy].localeCompare(b[sortBy]);
-    });
+  // Filter items by main category and subcategory
+  let filteredItems = allItems;
+  if (mainCategory === 'Raw Items') {
+    filteredItems = filteredItems.filter(item => ['Vegetables', 'Spices', 'Grains'].includes(item.category));
+    if (rawSubcategory !== 'All') {
+      filteredItems = filteredItems.filter(item => item.category === rawSubcategory);
+    }
+  } else if (mainCategory === 'Special Items') {
+    filteredItems = filteredItems.filter(item => item.category === 'Special');
+    if (specialSubcategory !== 'All') {
+      filteredItems = filteredItems.filter(item => item.subcategory === specialSubcategory);
+    }
+  }
+  // Search filter
+  filteredItems = filteredItems.filter(item =>
+    item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    item.description.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+  // Sort
+  filteredItems = filteredItems.sort((a, b) => {
+    if (sortBy === 'price') {
+      return parseInt(a.price.replace(/[^0-9]/g, '')) - parseInt(b.price.replace(/[^0-9]/g, ''));
+    }
+    return a[sortBy].localeCompare(b[sortBy]);
+  });
 
   return (
     <>
@@ -125,20 +140,64 @@ function AllItemsPage() {
           </div>
           {/* Filters and Search */}
           <div className="mb-8 flex flex-col md:flex-row gap-4 items-center justify-between">
+            {/* Subcategory Filters */}
             <div className="flex flex-wrap gap-2">
-              {categories.map(category => (
-                <button
-                  key={category}
-                  onClick={() => setSelectedCategory(category)}
-                  className={`px-4 py-2 rounded-full font-medium transition-all duration-300 ${
-                    selectedCategory === category
-                      ? 'bg-orange-500 text-white'
-                      : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                  }`}
-                >
-                  {category}
-                </button>
-              ))}
+              {mainCategory === 'Raw Items' && (
+                <>
+                  <button
+                    key="All"
+                    onClick={() => setRawSubcategory('All')}
+                    className={`px-3 py-1 rounded-full font-medium transition-all duration-300 ${
+                      rawSubcategory === 'All'
+                        ? 'bg-orange-400 text-white'
+                        : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                    }`}
+                  >
+                    All
+                  </button>
+                  {rawSubcategories.map(subcat => (
+                    <button
+                      key={subcat}
+                      onClick={() => setRawSubcategory(subcat)}
+                      className={`px-3 py-1 rounded-full font-medium transition-all duration-300 ${
+                        rawSubcategory === subcat
+                          ? 'bg-orange-400 text-white'
+                          : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                      }`}
+                    >
+                      {subcat}
+                    </button>
+                  ))}
+                </>
+              )}
+              {mainCategory === 'Special Items' && (
+                <>
+                  <button
+                    key="AllSpecial"
+                    onClick={() => setSpecialSubcategory('All')}
+                    className={`px-3 py-1 rounded-full font-medium transition-all duration-300 ${
+                      specialSubcategory === 'All'
+                        ? 'bg-orange-400 text-white'
+                        : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                    }`}
+                  >
+                    All
+                  </button>
+                  {specialSubcategories.map(subcat => (
+                    <button
+                      key={subcat}
+                      onClick={() => setSpecialSubcategory(subcat)}
+                      className={`px-3 py-1 rounded-full font-medium transition-all duration-300 ${
+                        specialSubcategory === subcat
+                          ? 'bg-orange-400 text-white'
+                          : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                      }`}
+                    >
+                      {subcat}
+                    </button>
+                  ))}
+                </>
+              )}
             </div>
 
             <div className="flex gap-4 items-center">
@@ -165,6 +224,22 @@ function AllItemsPage() {
                 </svg>
               </div>
 
+              {/* Main Category Sort Dropdown */}
+              <select
+                value={mainCategory}
+                onChange={e => {
+                  setMainCategory(e.target.value);
+                  setRawSubcategory('All');
+                  setSpecialSubcategory('All');
+                }}
+                className="px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-orange-500 outline-none"
+              >
+                {mainCategories.map(cat => (
+                  <option key={cat} value={cat}>{cat}</option>
+                ))}
+              </select>
+
+              {/* Sort By Dropdown */}
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}

@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const rawItems = [
   {
@@ -64,6 +65,7 @@ const rawItems = [
 ];
 
 function RawItemsSection() {
+  const navigate = useNavigate();
   return (
     <section className="w-full py-16 dark:bg-gray-900">
       <div className="max-w-6xl mx-auto">
@@ -161,15 +163,15 @@ function RawItemsSection() {
 
         {/* Explore All Items Button */}
         <div className="mt-16 text-center">
-          <a 
-            href="/all-items" 
+          <button
+            onClick={() => navigate('/all-items?sort=Raw Items')}
             className="inline-flex items-center gap-2 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-8 py-4 rounded-xl text-lg font-semibold shadow-lg hover:shadow-2xl transform hover:scale-105 transition-all duration-300"
           >
             Explore All Items
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" />
             </svg>
-          </a>
+          </button>
         </div>
       </div>
     </section>

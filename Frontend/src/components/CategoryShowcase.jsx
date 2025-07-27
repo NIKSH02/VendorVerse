@@ -5,12 +5,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 import NewRequestSection from './NewRequestSection';
 import SpecialItemsSection from './SpecialItemsSection';
 import HeroSection from './HeroSection';
+import { useNavigate } from 'react-router-dom';
 
 const CategoryShowcase = () => {
   const headingText = "welcome to street supply.";
   const [displayedText, setDisplayedText] = useState('');
   const [index, setIndex] = useState(0);
   const [activeSection, setActiveSection] = useState('');
+  const navigate = useNavigate();
   // Refs for each section
   const rawRef = React.useRef(null);
   const requestRef = React.useRef(null);
@@ -46,25 +48,29 @@ const CategoryShowcase = () => {
       title: "Raw Materials",
       icon: Package,
       description: "Source the freshest ingredients for your street food creations.",
-      section: "raw"
+      section: "raw",
+      onExplore: () => setActiveSection('raw')
     },
     {
       title: "Recent Requests",
       icon: ClipboardList,
       description: "See the latest demands from the street food community.",
-      section: "request"
+      section: "request",
+      onExplore: () => setActiveSection('request')
     },
     {
       title: "Special Items",
       icon: Utensils,
       description: "Discover unique and hard-to-find ingredients like boiled aloo vada masala.",
-      section: "special"
+      section: "special",
+      onExplore: () => setActiveSection('special')
     },
     {
       title: "Become a Vendor AI",
       icon: Bot,
       description: "Leverage AI to optimize your street food business operations.",
-      section: "hero"
+      section: "hero",
+      onExplore: () => setActiveSection('hero')
     },
   ];
 
@@ -148,7 +154,7 @@ const CategoryShowcase = () => {
             title={card.title}
             icon={card.icon}
             description={card.description}
-            onExplore={() => setActiveSection(card.section)}
+            onExplore={card.onExplore}
           />
         ))}
       </motion.div>
