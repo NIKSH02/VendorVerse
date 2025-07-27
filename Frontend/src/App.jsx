@@ -6,6 +6,7 @@ import { FaProductHunt } from 'react-icons/fa';
 import ProductDetail from './pages/ProductDetail';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import RawConnectDashboard from './pages/RawConnectDashboard';
+import LocationChat from './pages/LocationChat';
 
 
 // Simple Error Boundary Component
@@ -55,6 +56,7 @@ function App() {
             <Route path="/Global" element={<CommunityRequests />  } />
             <Route path="productdetail" element={<ProductDetail /> } />
             <Route path="/Profile" element= { <RawConnectDashboard /> } /> 
+            <Route path='/Communitychat' element={<LocationChat /> } />
           </Routes>
         </Router>
       </AuthProvider>
