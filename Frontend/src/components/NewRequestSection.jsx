@@ -173,6 +173,7 @@ export default function NewRequestSection() {
                     transition: { duration: 0.2 }
                   }}
                   whileTap={{ scale: 0.98 }}
+                  onClick={() => window.location.href = '/Global'}
                 >
                   View All Requests
                 </motion.button>

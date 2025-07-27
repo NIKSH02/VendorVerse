@@ -112,7 +112,8 @@ function HowItWorks() {
               {/* Step Card */}
               <motion.div
                 whileHover={{ scale: 1.05 }}
-                className="relative bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-xl"
+                className="relative bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-xl flex flex-col items-center justify-between min-h-[300px] h-full"
+                style={{ minHeight: '300px', height: '100%' }}
               >
                 {/* Step Number */}
                 <div className="absolute -top-4 -left-4 w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center text-white font-bold">
@@ -125,12 +126,14 @@ function HowItWorks() {
                 </div>
 
                 {/* Content */}
-                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
-                  {step.title}
-                </h3>
-                <p className="text-gray-600 dark:text-gray-300">
-                  {step.description}
-                </p>
+                <div className="flex flex-col flex-1 items-center justify-center w-full text-center">
+                  <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+                    {step.title}
+                  </h3>
+                  <p className="text-gray-600 dark:text-gray-300">
+                    {step.description}
+                  </p>
+                </div>
               </motion.div>
             </motion.div>
           ))}

@@ -1,302 +1,195 @@
-import React, { useRef, useState, useEffect } from 'react';
-import { motion, useAnimation, useInView } from 'framer-motion';
+import React, { useState, useEffect } from 'react';
+import { Package, ClipboardList, Utensils, Bot } from 'lucide-react';
+import RawItemSection from './RawItemsSection';
+import { motion, AnimatePresence } from 'framer-motion';
+import NewRequestSection from './NewRequestSection';
+import SpecialItemsSection from './SpecialItemsSection';
+import HeroSection from './HeroSection';
 
-const categories = [
-  {
-    id: 1,
-    title: "Raw Items",
-    description: "Fresh vegetables, grains, and spices sourced directly from farmers",
-    image: "/asian-market-booth-vendor-buyers-isolated-white-background-indian-street-souk-kiosk-spices-local-outdoor-bazaar-vector-200378147.webp",
-    gradient: "from-orange-400 via-orange-500 to-orange-600",
-    icon: (
-      <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-      </svg>
-    )
-  },
-  {
-    id: 2,
-    title: "Special Items",
-    description: "Premium and seasonal ingredients for special occasions",
-    image: "/asian-market-booth-vendor-buyers-isolated-white-background-indian-street-souk-kiosk-spices-local-outdoor-bazaar-vector-200378147.webp",
-    gradient: "from-orange-500 via-orange-600 to-orange-700",
-    icon: (
-      <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
-      </svg>
-    )
-  },
-  {
-    id: 3,
-    title: "Make Request",
-    description: "Can't find what you need? Make a custom request",
-    image: "/farmer.png",
-    gradient: "from-orange-600 via-orange-700 to-orange-800",
-    icon: (
-      <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-      </svg>
-    )
-  },
-  {
-    id: 4,
-    title: "AI Chat",
-    description: "Get instant help and answers from our AI assistant.",
-    image: "/vite.svg",
-    gradient: "from-blue-500 via-blue-600 to-blue-700",
-    icon: (
-      <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-      </svg>
-    )
-  }
-];
+const CategoryShowcase = () => {
+  const headingText = "welcome to street supply.";
+  const [displayedText, setDisplayedText] = useState('');
+  const [index, setIndex] = useState(0);
+  const [activeSection, setActiveSection] = useState('');
+  // Refs for each section
+  const rawRef = React.useRef(null);
+  const requestRef = React.useRef(null);
+  const specialRef = React.useRef(null);
+  const heroRef = React.useRef(null);
 
-const CategoryShowcase = ({ onCategoryClick, activeSection }) => {
-  const containerRef = useRef(null);
-  // Typewriter effect for heading
-  const fullText = 'Browse by Category';
-  const [typedText, setTypedText] = useState('');
+  // Scroll to section when activeSection changes
   useEffect(() => {
-    let i = 0;
-    const interval = setInterval(() => {
-      setTypedText(fullText.slice(0, i + 1));
-      i++;
-      if (i === fullText.length) clearInterval(interval);
-    }, 70);
-    return () => clearInterval(interval);
-  }, []);
+    let ref = null;
+    if (activeSection === 'raw') ref = rawRef;
+    else if (activeSection === 'request') ref = requestRef;
+    else if (activeSection === 'special') ref = specialRef;
+    else if (activeSection === 'hero') ref = heroRef;
+    if (ref && ref.current) {
+      setTimeout(() => {
+        ref.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100); // Wait for section to render
+    }
+  }, [activeSection]);
+
+  useEffect(() => {
+    if (index < headingText.length) {
+      const timeoutId = setTimeout(() => {
+        setDisplayedText((prev) => prev + headingText[index]);
+        setIndex((prev) => prev + 1);
+      }, 75);
+      return () => clearTimeout(timeoutId);
+    }
+  }, [index, headingText]);
+
+  const cardsData = [
+    {
+      title: "Raw Materials",
+      icon: Package,
+      description: "Source the freshest ingredients for your street food creations.",
+      section: "raw"
+    },
+    {
+      title: "Recent Requests",
+      icon: ClipboardList,
+      description: "See the latest demands from the street food community.",
+      section: "request"
+    },
+    {
+      title: "Special Items",
+      icon: Utensils,
+      description: "Discover unique and hard-to-find ingredients like boiled aloo vada masala.",
+      section: "special"
+    },
+    {
+      title: "Become a Vendor AI",
+      icon: Bot,
+      description: "Leverage AI to optimize your street food business operations.",
+      section: "hero"
+    },
+  ];
+
+  const renderSection = () => {
+    switch (activeSection) {
+      case 'raw':
+        return (
+          <div ref={rawRef}>
+            <AnimatePresence>
+              <motion.div
+                key="raw-section"
+                initial={{ opacity: 0, scale: 0.7, rotate: -10, y: 100 }}
+                animate={{ opacity: 1, scale: 1, rotate: 0, y: 0 }}
+                exit={{ opacity: 0, scale: 0.7, rotate: 10, y: 100 }}
+                transition={{ type: 'spring', stiffness: 120, damping: 14, duration: 0.7 }}
+              >
+                <RawItemSection />
+              </motion.div>
+            </AnimatePresence>
+          </div>
+        );
+      case 'request':
+        return <div ref={requestRef}><NewRequestSection /></div>;
+      case 'special':
+        return (
+          <div ref={specialRef}>
+            <AnimatePresence>
+              <motion.div
+                key="special-section"
+                initial={{ opacity: 0, y: 80 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 80 }}
+                transition={{ duration: 0.6, ease: 'easeOut' }}
+              >
+                <SpecialItemsSection />
+              </motion.div>
+            </AnimatePresence>
+          </div>
+        );
+      case 'hero':
+        return <div ref={heroRef}><HeroSection /></div>;
+      default:
+        return null;
+    }
+  };
 
   return (
-    <motion.section 
-      id="category-section" 
-      className="relative w-full pt-0 pb-20 overflow-hidden bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.8 }}
-    >
-      {/* Background Pattern */}
-      <motion.div 
-        className="absolute inset-0 opacity-40 dark:opacity-20"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 0.4 }}
-        transition={{ duration: 1.2 }}
-      >
-        <motion.div 
-          className="absolute inset-0 bg-gradient-to-r from-orange-500/10 to-orange-600/10"
-          initial={{ x: "-100%" }}
-          animate={{ x: 0 }}
-          transition={{ duration: 1.5, ease: "easeOut" }}
-        />
-        <div className="h-full w-full">
-          {[...Array(10)].map((_, i) => (
-            <motion.div
-              key={i}
-              className="absolute rounded-full bg-orange-500/5"
-              initial={{
-                scale: 0,
-                rotate: 0,
-                opacity: 0
-              }}
-              animate={{
-                scale: 1,
-                rotate: 360,
-                opacity: 0.5
-              }}
-              transition={{
-                duration: Math.random() * 2 + 1,
-                delay: i * 0.2,
-                repeat: Infinity,
-                repeatType: "reverse",
-                ease: "easeInOut"
-              }}
-              style={{
-                width: `${Math.random() * 200 + 50}px`,
-                height: `${Math.random() * 200 + 50}px`,
-                top: `${Math.random() * 100}%`,
-                left: `${Math.random() * 100}%`,
-              }}
-            />
-          ))}
+    <div className="min-h-screen bg-white text-gray-800 font-inter flex flex-col items-center justify-center p-4 sm:p-8">
+      <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
+      <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-center mb-4 mt-0 text-black leading-tight" style={{ marginTop: '15px' }}>
+        <span className="typewriter-text">
+          {displayedText}
+          <span className="inline-block w-1.5 h-8 sm:h-10 lg:h-12 bg-orange-500 animate-blink ml-1"></span>
+        </span>
+      </h1>
+      {/* Restored Search Bar */}
+      <div className="flex justify-center mb-8 w-full">
+        <div className="relative w-full max-w-xl">
+          <input
+            type="text"
+            placeholder="Search for any item, category, or vendor..."
+            className="w-full py-3 pl-10 pr-4 rounded-xl border border-orange-200 focus:border-orange-500 focus:ring-2 focus:ring-orange-100 bg-white text-base shadow placeholder-gray-400 transition-all duration-200"
+            style={{ boxShadow: '0 2px 12px 0 rgba(251, 146, 60, 0.08)' }}
+          />
+          <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-orange-500">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 104.5 4.5a7.5 7.5 0 0012.15 12.15z" />
+            </svg>
+          </span>
         </div>
-      </motion.div>
-
-      <div className="relative max-w-7xl mx-auto px-4">
-        {/* Section Header */}
-        <motion.div 
-          className="text-center mb-13"
-          initial={{ opacity: 0, y: 50 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.8 }}
-        >
-          <motion.h2 
-            className="text-5xl sm:text-6xl font-extrabold text-black mb-1 tracking-tight flex items-center justify-center gap-2"
-            initial={{ opacity: 0, scale: 0.8 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            style={{ minHeight: '3.5em' }}
-          >
-            <span className="text-orange-500">
-              {typedText}
-              <span className="animate-pulse">|</span>
-            </span>
-          </motion.h2>
-          <motion.p 
-            className="text-lg text-gray-600 dark:text-gray-300 mt-[-22px]"
-            initial={{ opacity: 0, y: 5 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6, delay: 0.6 }}
-          >
-            Discover our extensive range of products and services
-          </motion.p>
-        </motion.div>
-
-        {/* Categories Container */}
-        <motion.div 
-          className="relative"
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.8, delay: 0.4 }}
-        >
-          {/* Removed left/right blur gradients and all movement for static cards */}
-
-          <div className="flex items-start justify-center min-h-[100px] pt-0 pb-0 mt-[-80px]">
-            <motion.div
-              ref={containerRef}
-              className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-10 py-10"
-              style={{ width: '100%' }}
-              initial={{ x: 100, opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              transition={{ duration: 0.8 }}
-            >
-              {categories.map((category, index) => {
-                // For AI Chat, use a different click handler or none
-                const isAIChat = category.id === 4;
-                let sectionKey = category.id === 1 ? 'raw' : category.id === 2 ? 'special' : category.id === 3 ? 'request' : 'ai';
-                return (
-                  <motion.div
-                    key={category.id}
-                    className="flex flex-col items-stretch w-full"
-                    initial={{ opacity: 0, y: 50 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.5, delay: index * 0.1 }}
-                    animate={{
-                      scale: activeSection === sectionKey ? 1.08 : 1
-                    }}
-                    whileHover={{ scale: activeSection === sectionKey ? 1.12 : 1.03 }}
-                  >
-                    <motion.div
-                      className="relative bg-white/90 dark:bg-gray-800/90 rounded-2xl overflow-hidden group shadow-lg dark:shadow-orange-500/10 min-h-[360px] w-full flex flex-col"
-                      whileHover={{ y: -5 }}
-                      transition={{ duration: 0.3 }}
-                    >
-                      {/* Circular Background */}
-                      <motion.div
-                        className={`absolute -right-16 -top-16 w-52 h-52 rounded-full bg-gradient-to-br ${category.gradient}`}
-                        initial={{ scale: 0, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 0.8 }}
-                        transition={{ duration: 0.5 }}
-                      />
-
-                      {/* Content */}
-                      <div className="relative p-4 sm:p-5 h-[320px] sm:h-[360px] flex flex-col">
-                        {/* Icon */}
-                        <motion.div
-                          className="mb-4 text-gray-800 dark:text-gray-100 z-10"
-                          initial={{ scale: 0, rotate: -180 }}
-                          animate={{ scale: 1, rotate: 0 }}
-                          transition={{ duration: 0.5, delay: 0.2 }}
-                          whileHover={{ rotate: 360, scale: 1.1 }}
-                        >
-                          {category.icon}
-                        </motion.div>
-
-                        {/* Text Content */}
-                        <motion.div
-                          className="flex-1"
-                          initial={{ opacity: 0, x: -20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ duration: 0.5, delay: 0.3 }}
-                        >
-                          <motion.h3
-                            className="relative z-10 mb-2 text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100"
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            transition={{ duration: 0.5, delay: 0.4 }}
-                            whileHover={{ scale: 1.02 }}
-                          >
-                            {category.title}
-                          </motion.h3>
-                          <motion.p
-                            className="text-sm sm:text-base text-gray-600 dark:text-gray-300 z-10 relative"
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            transition={{ duration: 0.5, delay: 0.5 }}
-                          >
-                            {category.description}
-                          </motion.p>
-                        </motion.div>
-
-                        {/* Circular Image */}
-                        <motion.div
-                          className="absolute bottom-0 right-0 w-40 h-40 sm:w-48 sm:h-48 rounded-tl-full overflow-hidden"
-                          initial={{ scale: 0, x: 100 }}
-                          animate={{ scale: 1, x: 0 }}
-                          transition={{ duration: 0.6, delay: 0.2 }}
-                        >
-                          <motion.img
-                            src={category.image}
-                            alt={category.title}
-                            className="w-full h-full object-cover transform scale-150 origin-top-left"
-                            transition={{ duration: 0.4 }}
-                          />
-                        </motion.div>
-
-                        {/* Action Button */}
-                        {isAIChat ? (
-                          <motion.a
-                            href="#hero-section"
-                            className="mt-3 sm:mt-5 px-4 sm:px-5 py-2 backdrop-blur-sm rounded-xl z-10 relative shadow-lg font-semibold text-sm sm:text-base bg-gradient-to-r from-blue-500 to-blue-700 text-white hover:from-blue-600 hover:to-blue-800"
-                            whileHover={{ scale: 1.03, boxShadow: "0 8px 20px rgba(0,0,0,0.1)" }}
-                            whileTap={{ scale: 0.97 }}
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.4, delay: 0.6 }}
-                          >
-                            Try AI Chat
-                          </motion.a>
-                        ) : (
-                          <motion.button
-                            onClick={() => onCategoryClick(sectionKey)}
-                            className={`mt-3 sm:mt-5 px-4 sm:px-5 py-2 backdrop-blur-sm rounded-xl z-10 relative shadow-lg font-semibold text-sm sm:text-base
-                              ${activeSection === sectionKey
-                                ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white dark:from-orange-600 dark:to-orange-700'
-                                : 'bg-white/80 text-gray-900 dark:bg-gray-700/50 dark:text-white hover:bg-orange-50 dark:hover:bg-orange-600/30'}`}
-                            whileHover={{ scale: 1.03, boxShadow: "0 8px 20px rgba(0,0,0,0.1)" }}
-                            whileTap={{ scale: 0.97 }}
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.4, delay: 0.6 }}
-                          >
-                            {activeSection === sectionKey ? 'Selected' : 'Explore Now'}
-                          </motion.button>
-                        )}
-                      </div>
-                    </motion.div>
-                  </motion.div>
-                );
-              })}
-            </motion.div>
-          </div>
-        </motion.div>
       </div>
-    </motion.section>
+      <motion.div
+        className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-7 w-full max-w-5xl"
+        initial={{ opacity: 0, scale: 0.95, y: 60 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        transition={{ type: 'spring', duration: 0.8, bounce: 0.25 }}
+      >
+        {cardsData.map((card, idx) => (
+          <Card
+            key={idx}
+            title={card.title}
+            icon={card.icon}
+            description={card.description}
+            onExplore={() => setActiveSection(card.section)}
+          />
+        ))}
+      </motion.div>
+      {renderSection()}
+      <style>
+        {`
+        @keyframes blink {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0; }
+        }
+        .animate-blink {
+          animation: blink 0.75s step-end infinite;
+        }
+        .font-inter {
+            font-family: 'Inter', sans-serif;
+        }
+        `}
+      </style>
+    </div>
   );
-}
+};
+
+const Card = ({ title, icon: Icon, description, onExplore }) => {
+  return (
+    <div className="bg-white rounded-lg shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1
+                    border border-orange-200 flex flex-col items-center p-5 text-center min-h-[230px] h-full" style={{ minHeight: '230px', height: '100%', maxWidth: '270px', margin: '0 auto' }}>
+      <div className="p-3 bg-orange-500 text-white rounded-full mb-3 shadow">
+        <Icon size={36} />
+      </div>
+      <h3 className="text-lg font-bold text-black mb-2">{title}</h3>
+      <p className="text-gray-600 text-sm mb-3 flex-grow">{description}</p>
+      <button
+        className="bg-orange-600 hover:bg-orange-700 text-white font-semibold py-2 px-5 rounded-full
+                         shadow hover:shadow-md transition-all duration-300 focus:outline-none focus:ring-2
+                         focus:ring-orange-500 focus:ring-opacity-75 text-sm"
+        onClick={onExplore}
+      >
+        Explore
+      </button>
+    </div>
+  );
+};
 
 export default CategoryShowcase;

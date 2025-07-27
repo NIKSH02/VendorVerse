@@ -12,11 +12,14 @@ const {
 const { sendSignupOTP, sendSigninOTPEmail } = require("../utils/emailService");
 
 const registerUser = asynchandler(async (req, res) => {
-  const { username, email, password } = req.body;
+  const { username, email, password, name, fullname, phone } = req.body;
   console.log("Registration request:", {
     username,
     email,
     password: password ? "PROVIDED" : "MISSING",
+    name,
+    fullname,
+    phone,
   });
 
   // Simple validation - only require username, email, and password
@@ -52,24 +55,27 @@ const registerUser = asynchandler(async (req, res) => {
       throw new apiError(409, "Username is already taken");
     }
 
-    // Create new user with basic information
+    // Set default address values (will be completed in profile later)
+    const userAddress = {
+      street: "To be updated",
+      city: "To be updated",
+      state: "To be updated",
+      pincode: "000000",
+      geolocation: {
+        lat: 0.0,
+        lng: 0.0,
+      },
+    };
+
+    // Create new user with provided information
     const newUser = await User.create({
       username: username.toLowerCase(),
       email,
       password, // Will be hashed by pre-save middleware
-      name: username, // Use username as default name
-      fullname: username, // Use username as default fullname
-      phone: `temp_${Date.now()}`, // Temporary phone number
-      address: {
-        street: "Not provided",
-        city: "Not provided",
-        state: "Not provided",
-        pincode: "000000",
-        geolocation: {
-          lat: 0.0,
-          lng: 0.0,
-        },
-      },
+      name: name || username, // Use provided name or username as default
+      fullname: fullname || username, // Use provided fullname or username as default
+      phone: phone || `temp_${Date.now()}`, // Use provided phone or temporary
+      address: userAddress,
       avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=6366f1&color=ffffff&size=200`,
       isEmailVerified: false, // Will be verified separately if needed
     });
