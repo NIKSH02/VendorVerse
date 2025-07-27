@@ -4,9 +4,6 @@ const {
   sendEmailVerificationOTP,
   verifyEmailOTP,
   resendEmailVerificationOTP,
-  sendSigninOTP,
-  verifySigninOTP,
-  resendSigninOTP,
 } = require("../controllers/user.controller");
 const upload = require("../middlewares/multer.middleware");
 const { loginUser, logoutUser } = require("../controllers/login.controller");
@@ -62,11 +59,6 @@ router.patch(
 router.post("/send-verification-otp", sendEmailVerificationOTP); // Send OTP for email verification
 router.post("/verify-email-otp", verifyEmailOTP); // Verify email OTP
 router.post("/resend-verification-otp", resendEmailVerificationOTP); // Resend email verification OTP
-
-// OTP Routes for Signin
-router.post("/send-signin-otp", sendSigninOTP); // Send OTP for signin
-router.post("/verify-signin-otp", verifySigninOTP); // Verify signin OTP
-router.post("/resend-signin-otp", resendSigninOTP); // Resend signin OTP
 
 // router.post("/signup", signup);
 // router.route('/register').post(registerUser);    // Route to register a user (used chaining method syntax)
