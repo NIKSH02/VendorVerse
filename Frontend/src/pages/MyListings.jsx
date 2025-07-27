@@ -113,10 +113,8 @@ const MyListings = () => {
 
   // Function to open product detail modal
   const handleViewDetails = (product) => {
-    console.log("View Details clicked for product:", product);
     setSelectedProduct(product);
     setIsDetailModalOpen(true);
-    console.log("Modal state set - isDetailModalOpen:", true);
   };
 
   // Function to close product detail modal

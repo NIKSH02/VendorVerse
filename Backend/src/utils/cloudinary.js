@@ -1,36 +1,63 @@
-const v2 = require('cloudinary').v2;
-const fs = require('fs');
+const v2 = require("cloudinary").v2;
+const fs = require("fs");
 
 const cloudnairyconnect = () => {
-    try {
-      v2.config({
-        cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-        api_key: process.env.CLOUDINARY_API_KEY,
-        api_secret: process.env.CLOUDINARY_API_SECRET,
-      });
-      console.log("CD connected");
-    } catch (error) {
-      console.log("error connecting CD" + error);
-    }
-  };
+  try {
+    console.log("Cloudinary config check:");
+    console.log(
+      "CLOUD_NAME:",
+      process.env.CLOUDINARY_CLOUD_NAME ? "SET" : "NOT SET"
+    );
+    console.log("API_KEY:", process.env.CLOUDINARY_API_KEY ? "SET" : "NOT SET");
+    console.log(
+      "API_SECRET:",
+      process.env.CLOUDINARY_API_SECRET ? "SET" : "NOT SET"
+    );
+
+    v2.config({
+      cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+      api_key: process.env.CLOUDINARY_API_KEY,
+      api_secret: process.env.CLOUDINARY_API_SECRET,
+    });
+    console.log("CD connected");
+  } catch (error) {
+    console.log("error connecting CD" + error);
+  }
+};
 
 const uploadOnCloudinary = async (localFilePath) => {
-    try{
-
-        await cloudnairyconnect();
-        if(!localFilePath){
-            throw new Error('File path is required');
-        }
-        const response = await v2.uploader.upload(localFilePath,{
-            resource_type:'auto'
-        })
-        console.log('file is uploaded on cloudinary',response.url);
-        return response;
-    } catch (error){
-        console.error('Error uploading file on cloudinary:',error);
-        fs.unlinkSync(localFilePath )
-        return null;
+  try {
+    console.log("Uploading file to Cloudinary:", localFilePath);
+    await cloudnairyconnect();
+    if (!localFilePath) {
+      throw new Error("File path is required");
     }
-}
 
-module.exports =uploadOnCloudinary;
+    // Check if file exists
+    if (!fs.existsSync(localFilePath)) {
+      throw new Error(`File does not exist: ${localFilePath}`);
+    }
+
+    const response = await v2.uploader.upload(localFilePath, {
+      resource_type: "auto",
+      timeout: 30000, // 30 second timeout for Cloudinary upload
+    });
+    console.log("file is uploaded on cloudinary", response.url);
+
+    // Clean up the temp file
+    fs.unlinkSync(localFilePath);
+    return response;
+  } catch (error) {
+    console.error("Error uploading file on cloudinary:", error);
+    try {
+      if (fs.existsSync(localFilePath)) {
+        fs.unlinkSync(localFilePath);
+      }
+    } catch (cleanupError) {
+      console.error("Error cleaning up file:", cleanupError);
+    }
+    return null;
+  }
+};
+
+module.exports = uploadOnCloudinary;

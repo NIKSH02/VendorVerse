@@ -31,8 +31,6 @@ const Modal = ({ isOpen, onClose, children, maxWidth = "max-w-lg" }) => {
   const [backdropAnimation, setBackdropAnimation] = useState(false);
   const modalContentRef = useRef(null);
 
-  console.log("Modal component - isOpen:", isOpen);
-
   const handleClose = useCallback(() => {
     setBackdropAnimation(false);
     setAnimation(false);

@@ -19,7 +19,8 @@ const createProduct = async (req, res) => {
     } = req.body;
 
     // Check if user exists and is a supplier
-    const user = await User.findById(req.user._id);
+    const currentUserId = req.user._id || req.user.id;
+    const user = await User.findById(currentUserId);
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -27,7 +28,7 @@ const createProduct = async (req, res) => {
       });
     }
 
-    // Temporarily disabled supplier check for testing
+    // Temporarily disabled supplier check - allow any user to create products
     // if (!user.isSupplier) {
     //     return res.status(403).json({
     //         success: false,
@@ -35,27 +36,53 @@ const createProduct = async (req, res) => {
     //     });
     // }
 
-    // Check if image files are provided (minimum 4 required)
-    // Temporarily made optional for JSON testing
-    if (!req.files || !req.files.images) {
-      // Get imageUrl from request body or use placeholder
-      const { imageUrl, imageUrls } = req.body;
-      const finalImageUrl =
-        imageUrl || "https://via.placeholder.com/400x300?text=No+Image";
-      const finalImageUrls = imageUrls || [finalImageUrl];
+    // Debug: Log what we received
+    console.log("Request files:", req.files);
+    console.log("Request files type:", typeof req.files);
+    if (req.files) {
+      console.log("Request files keys:", Object.keys(req.files));
+      if (req.files.images) {
+        console.log("Images found:", req.files.images);
+        console.log("Images type:", typeof req.files.images);
+        console.log("Is images array:", Array.isArray(req.files.images));
+      }
+    }
+    console.log("Request body:", req.body);
 
-      // Create product without file uploads but with provided imageUrl
+    // Parse location if it's a JSON string (from FormData)
+    let parsedLocation = location;
+    if (typeof location === "string") {
+      try {
+        parsedLocation = JSON.parse(location);
+      } catch (error) {
+        console.log("Location parsing error:", error);
+        // If parsing fails, use default location
+        parsedLocation = {
+          lat: 0,
+          lng: 0,
+          address: "Default location",
+        };
+      }
+    }
+
+    // Check if image files are provided
+    if (!req.files || !req.files.images) {
+      console.log(
+        "No images provided, creating product with placeholder image"
+      );
+
+      // Create product with placeholder image
       const newProduct = new SupplierListing({
-        userId: req.user._id,
+        userId: currentUserId,
         itemName,
-        imageUrl: finalImageUrl,
-        imageUrls: finalImageUrls,
+        imageUrl: "https://via.placeholder.com/400x300?text=No+Image",
+        imageUrls: ["https://via.placeholder.com/400x300?text=No+Image"],
         imageDetails: [
           {
-            url: finalImageUrl,
-            publicId: imageUrl ? "user_provided" : "placeholder",
-            format: imageUrl ? "unknown" : "jpg",
-            size: imageUrl ? 0 : 1024,
+            url: "https://via.placeholder.com/400x300?text=No+Image",
+            publicId: "placeholder",
+            format: "jpg",
+            size: 1024,
             isPrimary: true,
           },
         ],
@@ -64,7 +91,7 @@ const createProduct = async (req, res) => {
         pricePerUnit,
         deliveryAvailable: deliveryAvailable || false,
         deliveryFee: deliveryFee || 0,
-        location,
+        location: parsedLocation,
         type,
         category,
         description,
@@ -78,9 +105,7 @@ const createProduct = async (req, res) => {
 
       return res.status(201).json({
         success: true,
-        message: imageUrl
-          ? "Product created successfully with provided image URL"
-          : "Product created successfully (without images)",
+        message: "Product created successfully (with placeholder image)",
         data: savedProduct,
       });
     }
@@ -94,9 +119,71 @@ const createProduct = async (req, res) => {
 
     // Check minimum image requirement
     if (imageFiles.length < 4) {
+      // If we have at least 1 image, use the first one and create duplicates for the minimum requirement
+      if (imageFiles.length >= 1) {
+        console.log(
+          `Only ${imageFiles.length} image(s) provided, using first image for all slots`
+        );
+
+        console.log("First image file details:", imageFiles[0]);
+        console.log("First image tempFilePath:", imageFiles[0].tempFilePath);
+
+        // Upload the first image to Cloudinary
+        const cloudinaryResponse = await uploadOnCloudinary(
+          imageFiles[0].tempFilePath
+        );
+
+        console.log("Cloudinary response:", cloudinaryResponse);
+
+        if (!cloudinaryResponse) {
+          return res.status(500).json({
+            success: false,
+            message: "Failed to upload image to Cloudinary",
+          });
+        }
+
+        // Create product with single image (duplicated for consistency)
+        const newProduct = new SupplierListing({
+          userId: currentUserId,
+          itemName,
+          imageUrl: cloudinaryResponse.secure_url,
+          imageUrls: [cloudinaryResponse.secure_url],
+          imageDetails: [
+            {
+              url: cloudinaryResponse.secure_url,
+              publicId: cloudinaryResponse.public_id,
+              format: cloudinaryResponse.format,
+              size: cloudinaryResponse.bytes,
+              isPrimary: true,
+            },
+          ],
+          quantityAvailable,
+          unit,
+          pricePerUnit,
+          deliveryAvailable: deliveryAvailable || false,
+          deliveryFee: deliveryFee || 0,
+          location: parsedLocation,
+          type,
+          category,
+          description,
+        });
+
+        const savedProduct = await newProduct.save();
+        await savedProduct.populate(
+          "userId",
+          "name username fullname phone email"
+        );
+
+        return res.status(201).json({
+          success: true,
+          message: "Product created successfully with image",
+          data: savedProduct,
+        });
+      }
+
       return res.status(400).json({
         success: false,
-        message: "Minimum 4 images are required for product listing",
+        message: "Minimum 1 image is required for product listing",
       });
     }
 
@@ -137,7 +224,7 @@ const createProduct = async (req, res) => {
     }));
 
     const newProduct = new SupplierListing({
-      userId: req.user._id,
+      userId: currentUserId,
       itemName,
       imageUrl: imageUrls[0], // Primary image URL (first image)
       imageUrls: imageUrls, // All image URLs
@@ -147,7 +234,7 @@ const createProduct = async (req, res) => {
       pricePerUnit,
       deliveryAvailable: deliveryAvailable || false,
       deliveryFee: deliveryFee || 0,
-      location,
+      location: parsedLocation,
       type,
       category,
       description,
@@ -376,22 +463,8 @@ const getProductById = async (req, res) => {
 // Update product (only by owner)
 const updateProduct = async (req, res) => {
   try {
-    // Add explicit user validation
-    if (!req.user || !req.user._id) {
-      return res.status(401).json({
-        success: false,
-        message: "Authentication required. User not found in request.",
-      });
-    }
-
     const { id } = req.params;
     const updateData = req.body;
-
-    console.log("Update product request:", {
-      productId: id,
-      userId: req.user._id,
-      updateData: updateData,
-    });
 
     const product = await SupplierListing.findById(id);
 
@@ -402,14 +475,9 @@ const updateProduct = async (req, res) => {
       });
     }
 
-    console.log("Product found, checking ownership:", {
-      productUserId: product.userId.toString(),
-      requestUserId: req.user._id.toString(),
-      isOwner: product.userId.toString() === req.user._id.toString(),
-    });
-
     // Check if user is the owner of the product
-    if (product.userId.toString() !== req.user._id.toString()) {
+    const currentUserId = req.user._id || req.user.id;
+    if (product.userId.toString() !== currentUserId.toString()) {
       return res.status(403).json({
         success: false,
         message: "You can only update your own products",
@@ -481,15 +549,12 @@ const updateProduct = async (req, res) => {
       { new: true, runValidators: true }
     ).populate("userId", "name username fullname phone email");
 
-    console.log("Product updated successfully:", updatedProduct._id);
-
     res.status(200).json({
       success: true,
       message: "Product updated successfully",
       data: updatedProduct,
     });
   } catch (error) {
-    console.error("Update product error:", error);
     res.status(400).json({
       success: false,
       message: "Error updating product",
@@ -501,14 +566,6 @@ const updateProduct = async (req, res) => {
 // Delete product (only by owner)
 const deleteProduct = async (req, res) => {
   try {
-    // Add explicit user validation
-    if (!req.user || !req.user._id) {
-      return res.status(401).json({
-        success: false,
-        message: "Authentication required. User not found in request.",
-      });
-    }
-
     const { id } = req.params;
 
     const product = await SupplierListing.findById(id);
@@ -520,8 +577,24 @@ const deleteProduct = async (req, res) => {
       });
     }
 
+    // Debug: Log user IDs for comparison
+    console.log("Product userId:", product.userId);
+    console.log("Product userId type:", typeof product.userId);
+    console.log("Request user object:", req.user);
+    console.log("Request user ID (_id):", req.user._id);
+    console.log("Request user ID (id):", req.user.id);
+    console.log("Product userId toString:", product.userId.toString());
+
+    // Use both _id and id for compatibility
+    const currentUserId = req.user._id || req.user.id;
+    console.log("Current user ID:", currentUserId);
+    console.log(
+      "Are they equal?",
+      product.userId.toString() === currentUserId.toString()
+    );
+
     // Check if user is the owner of the product
-    if (product.userId.toString() !== req.user._id.toString()) {
+    if (product.userId.toString() !== currentUserId.toString()) {
       return res.status(403).json({
         success: false,
         message: "You can only delete your own products",
@@ -535,7 +608,6 @@ const deleteProduct = async (req, res) => {
       message: "Product deleted successfully",
     });
   } catch (error) {
-    console.error("Delete product error:", error);
     res.status(500).json({
       success: false,
       message: "Error deleting product",
@@ -547,23 +619,12 @@ const deleteProduct = async (req, res) => {
 // Get user's own products
 const getMyProducts = async (req, res) => {
   try {
-    // Add explicit user validation
-    if (!req.user || !req.user._id) {
-      return res.status(401).json({
-        success: false,
-        message: "Authentication required. User not found in request.",
-      });
-    }
-
-    console.log("getMyProducts called by user:", req.user._id);
-
     const { page = 1, limit = 10, type, category } = req.query;
 
-    const filter = { userId: req.user._id };
+    const currentUserId = req.user._id || req.user.id;
+    const filter = { userId: currentUserId };
     if (type) filter.type = type;
     if (category) filter.category = category;
-
-    console.log("Filter applied:", filter);
 
     const skip = (page - 1) * limit;
 
@@ -573,8 +634,6 @@ const getMyProducts = async (req, res) => {
       .limit(Number(limit));
 
     const total = await SupplierListing.countDocuments(filter);
-
-    console.log(`Found ${products.length} products for user ${req.user._id}`);
 
     res.status(200).json({
       success: true,
@@ -586,7 +645,6 @@ const getMyProducts = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("getMyProducts error:", error);
     res.status(500).json({
       success: false,
       message: "Error fetching your products",
@@ -598,32 +656,9 @@ const getMyProducts = async (req, res) => {
 // Toggle product active status
 const toggleProductStatus = async (req, res) => {
   try {
-    // Add explicit user validation
-    if (!req.user || !req.user._id) {
-      return res.status(401).json({
-        success: false,
-        message: "Authentication required. User not found in request.",
-      });
-    }
-
     const { id } = req.params;
 
-    console.log("Toggle Status Request:", {
-      productId: id,
-      userId: req.user?._id,
-      userDetails: req.user,
-    });
-
-    // Validate product ID format
-    if (!id || !id.match(/^[0-9a-fA-F]{24}$/)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid product ID format",
-      });
-    }
-
     const product = await SupplierListing.findById(id);
-    console.log("Found product:", product ? "Yes" : "No");
 
     if (!product) {
       return res.status(404).json({
@@ -632,42 +667,24 @@ const toggleProductStatus = async (req, res) => {
       });
     }
 
-    console.log("Product owner check:", {
-      productUserId: product.userId.toString(),
-      requestUserId: req.user._id.toString(),
-      isOwner: product.userId.toString() === req.user._id.toString(),
-    });
-
     // Check if user is the owner of the product
-    if (product.userId.toString() !== req.user._id.toString()) {
+    const currentUserId = req.user._id || req.user.id;
+    if (product.userId.toString() !== currentUserId.toString()) {
       return res.status(403).json({
         success: false,
         message: "You can only modify your own products",
       });
     }
 
-    const oldStatus = product.isActive;
     product.isActive = !product.isActive;
-    const savedProduct = await product.save();
-
-    console.log("Status update:", {
-      oldStatus,
-      newStatus: savedProduct.isActive,
-      saved: true,
-    });
+    await product.save();
 
     res.status(200).json({
       success: true,
-      message: `Product ${savedProduct.isActive ? "activated" : "deactivated"} successfully`,
-      data: {
-        _id: savedProduct._id,
-        itemName: savedProduct.itemName,
-        isActive: savedProduct.isActive,
-        previousStatus: oldStatus,
-      },
+      message: `Product ${product.isActive ? "activated" : "deactivated"} successfully`,
+      data: product,
     });
   } catch (error) {
-    console.error("Toggle product status error:", error);
     res.status(500).json({
       success: false,
       message: "Error updating product status",

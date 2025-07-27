@@ -54,7 +54,13 @@ export const productsAPI = {
   // Create new product
   createProduct: async (productData) => {
     try {
-      const response = await apiClient.post("/products", productData);
+      // Use longer timeout for file uploads (60 seconds)
+      const config = {};
+      if (productData instanceof FormData) {
+        config.timeout = 60000; // 60 seconds for file uploads
+      }
+
+      const response = await apiClient.post("/products", productData, config);
       return response.data;
     } catch (error) {
       console.error("Error creating product:", error);

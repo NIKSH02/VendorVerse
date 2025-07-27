@@ -15,14 +15,7 @@ import {
 } from "lucide-react";
 
 const ProductDetailModal = ({ isOpen, onClose, product }) => {
-  console.log("ProductDetailModal props:", {
-    isOpen,
-    onClose: !!onClose,
-    product: !!product,
-  });
-
   if (!product) {
-    console.log("No product provided to ProductDetailModal");
     return null;
   }
 
@@ -151,7 +144,9 @@ const ProductDetailModal = ({ isOpen, onClose, product }) => {
                       Location
                     </span>
                     <span className="text-white font-medium">
-                      {product.location}
+                      {typeof product.location === "object"
+                        ? product.location.address
+                        : product.location}
                     </span>
                   </div>
                 )}

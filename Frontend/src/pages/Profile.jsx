@@ -35,85 +35,85 @@ const Profile = () => {
 
   const [profileData, setProfileData] = useState(null);
 
-  useEffect(() => {
-    const fetchProfileData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
+  // Separate function to fetch profile data
+  const fetchProfileData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
 
-        const profileResponse = await profileAPI.getUserProfile();
+      const profileResponse = await profileAPI.getUserProfile();
 
-        if (profileResponse.success) {
-          const { user, statistics } = profileResponse.data;
+      if (profileResponse.success) {
+        const { user, statistics } = profileResponse.data;
 
-          const completeProfile = {
-            fullName: user.fullname || user.name || "",
-            email: user.email || "",
-            phone: user.phone || "",
-            businessType: user.isSupplier
-              ? "Supplier"
-              : user.isVendor
-              ? "Vendor"
-              : "Farmer",
-            // Combined address for backward compatibility
-            address: user.address
-              ? `${user.address.city}, ${user.address.state}`
-              : "",
-            // Individual address fields
-            street: user.address?.street || "",
-            city: user.address?.city || "",
-            state: user.address?.state || "",
-            pincode: user.address?.pincode || "",
-            rating: user.rating || 0,
-            memberSince: new Date(user.createdAt).toLocaleDateString("en-US", {
-              year: "numeric",
-              month: "long",
-            }),
-          };
+        const completeProfile = {
+          fullName: user.fullname || user.name || "",
+          email: user.email || "",
+          phone: user.phone || "",
+          businessType: user.isSupplier
+            ? "Supplier"
+            : user.isVendor
+            ? "Vendor"
+            : "Farmer",
+          // Combined address for backward compatibility
+          address: user.address
+            ? `${user.address.city}, ${user.address.state}`
+            : "",
+          // Individual address fields
+          street: user.address?.street || "",
+          city: user.address?.city || "",
+          state: user.address?.state || "",
+          pincode: user.address?.pincode || "",
+          rating: user.rating || 0,
+          memberSince: new Date(user.createdAt).toLocaleDateString("en-US", {
+            year: "numeric",
+            month: "long",
+          }),
+        };
 
-          // Check profile completeness - show warning instead of redirecting
-          // since we're already on the profile page
-          if (!completeProfile.fullName || !completeProfile.email) {
-            setError("Please complete your profile information.");
-          }
-
-          setProfileData(completeProfile);
-
-          setFinancialData({
-            totalRevenue: statistics.totalRevenue || 0,
-            totalExpenditure: statistics.totalExpenditure || 0,
-            netBalance:
-              (statistics.totalRevenue || 0) -
-              (statistics.totalExpenditure || 0),
-            salesCount: statistics.completedOrdersAsSeller || 0,
-            orderCount: statistics.totalOrdersAsBuyer || 0,
-          });
-        } else {
-          setError("Failed to load profile data.");
+        // Check profile completeness - show warning instead of redirecting
+        // since we're already on the profile page
+        if (!completeProfile.fullName || !completeProfile.email) {
+          setError("Please complete your profile information.");
         }
-      } catch (err) {
-        console.error("Fetch error:", err);
 
-        // Check if it's an authentication error
-        if (err.response && err.response.status === 401) {
-          // Only redirect to auth if we're not already loading the profile for the first time
-          // This prevents unnecessary redirects on page refresh
-          console.log("Authentication error - token may have expired");
-          toast.error("Session expired. Please login again.", {
-            duration: 4000,
-            position: "top-center",
-          });
-          setTimeout(() => navigate("/auth"), 2000);
-        } else {
-          setError("Something went wrong. Please try again later.");
-        }
-      } finally {
-        setLoading(false);
+        setProfileData(completeProfile);
+
+        setFinancialData({
+          totalRevenue: statistics.totalRevenue || 0,
+          totalExpenditure: statistics.totalExpenditure || 0,
+          netBalance:
+            (statistics.totalRevenue || 0) - (statistics.totalExpenditure || 0),
+          salesCount: statistics.completedOrdersAsSeller || 0,
+          orderCount: statistics.totalOrdersAsBuyer || 0,
+        });
+      } else {
+        setError("Failed to load profile data.");
       }
-    };
+    } catch (err) {
+      console.error("Fetch error:", err);
 
+      // Check if it's an authentication error
+      if (err.response && err.response.status === 401) {
+        // Only redirect to auth if we're not already loading the profile for the first time
+        // This prevents unnecessary redirects on page refresh
+        console.log("Authentication error - token may have expired");
+        toast.error("Session expired. Please login again.", {
+          duration: 4000,
+          position: "top-center",
+        });
+        setTimeout(() => navigate("/auth"), 2000);
+      } else {
+        setError("Something went wrong. Please try again later.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchProfileData();
-  }, [navigate]);
+  }, []);
 
   const handleEditProfile = () => {
     // Extract address components if address is an object, otherwise use empty strings
@@ -205,44 +205,22 @@ const Profile = () => {
       console.log("Original form data:", editFormData);
       console.log("Sending transformed data:", transformedData);
 
-      // Show loading toast
-      const loadingToast = toast.loading("Updating profile...");
-
       const response = await profileAPI.updateUserProfile(transformedData);
       console.log("Update response:", response);
 
       if (response.success) {
-        // Dismiss loading toast and show success
-        toast.dismiss(loadingToast);
         toast.success("Profile updated successfully! 🎉", {
           duration: 4000,
           position: "top-center",
         });
 
-        // Update local state with the form data
-        const updatedProfile = {
-          ...profileData,
-          fullName: editFormData.fullName,
-          email: editFormData.email,
-          phone: editFormData.phone,
-          businessType: editFormData.businessType,
-          // Update individual address fields
-          street: editFormData.street || "",
-          city: editFormData.city || "",
-          state: editFormData.state || "",
-          pincode: editFormData.pincode || "",
-          // Update combined address for backward compatibility
-          address:
-            editFormData.city && editFormData.state
-              ? `${editFormData.city}, ${editFormData.state}`
-              : profileData.address,
-        };
-
-        setProfileData(updatedProfile);
+        // Close the modal first
         setIsEditModalOpen(false);
+
+        // Refetch profile data to ensure consistency with backend
+        await fetchProfileData();
       } else {
         console.error("Update failed:", response);
-        toast.dismiss(loadingToast);
         toast.error("Failed to update profile. Please try again.", {
           duration: 4000,
           position: "top-center",

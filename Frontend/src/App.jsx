@@ -16,6 +16,8 @@ import AboutPage from "./pages/AboutPage";
 // New modular dashboard components
 import Profile from "./pages/Profile";
 import MyListings from "./pages/MyListings";
+import AddProduct from "./pages/AddProduct";
+import EditProduct from "./pages/EditProduct";
 import OrdersToFulfill from "./pages/OrdersToFulfill";
 import OrdersPlaced from "./pages/OrdersPlaced";
 import Reviews from "./pages/Reviews";
@@ -137,6 +139,30 @@ function App() {
               element={
                 <ProtectedRoute>
                   <MyListings />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/my-listings"
+              element={
+                <ProtectedRoute>
+                  <MyListings />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/add-product"
+              element={
+                <ProtectedRoute>
+                  <AddProduct />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/edit-product/:productId"
+              element={
+                <ProtectedRoute>
+                  <EditProduct />
                 </ProtectedRoute>
               }
             />
