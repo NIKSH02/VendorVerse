@@ -3,6 +3,7 @@ import { AuthProvider } from "./context/AuthContext";
 import AuthPage from "./pages/AuthPage";
 import CommunityRequests from "./pages/CommunityRequests";
 import ProductDetail from "./pages/ProductDetail";
+import LocationChat from "./pages/LocationChat";
 import {
   BrowserRouter as Router,
   Routes,
@@ -20,6 +21,7 @@ import OrdersPlaced from "./pages/OrdersPlaced";
 import Reviews from "./pages/Reviews";
 import Notifications from "./pages/Notifications";
 import { useAuth } from "./hooks/useAuth";
+import PersonalChatUI from "./pages/PersonalChatUi";
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -85,9 +87,11 @@ function App() {
           <Routes>
             {/* Public Routes - No authentication required */}
             <Route path="/" element={<LandingPage />} />
-            <Route path="/about" element={<AboutPage />} />
+            <Route path="/about" element={<PersonalChatUI />} />
             <Route path="/authpage" element={<AuthPage />} />
-
+            <Route path="/global" element={<CommunityRequests />} />
+            <Route path="/productdetail" element={<ProductDetail />} />
+            <Route path="/locationchat" element={<LocationChat />} />
             {/* Protected Routes - Authentication required */}
             <Route
               path="/Global"

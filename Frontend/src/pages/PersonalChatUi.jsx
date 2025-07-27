@@ -177,10 +177,10 @@ const PersonalChatUI = () => {
             <div className="flex items-center space-x-2">
               <h2 className="text-lg font-semibold text-gray-900">Messages</h2>
               <div className="flex items-center space-x-1">
-                {isConnected ? <Wifi size={16} /> : <WifiOff size={16} />}
-                <span className={`text-xs font-medium ${getConnectionStatusColor()}`}>
-                  {getConnectionStatusText()}
-                </span>
+                {/* {isConnected ? <Wifi size={16} /> : <WifiOff size={16} />} */}
+                {/* <span className={`text-xs font-medium ${getConnectionStatusColor()}`}>
+                  {getConnectionStatusText()} */}
+                {/* </span> */}
               </div>
             </div>
             <button
@@ -276,9 +276,9 @@ const PersonalChatUI = () => {
               {chatListWithStatus.filter(c => c.isOnline).length} suppliers online
             </p>
             <div className="flex items-center justify-center space-x-1 mt-1">
-              <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-400' : 'bg-red-400'}`}></div>
+              {/* <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-400' : 'bg-red-400'}`}></div> */}
               <span className={`text-xs ${getConnectionStatusColor()}`}>
-                {isConnected ? 'Real-time sync active' : 'Connection lost'}
+                {/* {isConnected ? 'Real-time sync active' : 'Connection lost'} */}
               </span>
             </div>
           </div>
@@ -455,8 +455,8 @@ const PersonalChatUI = () => {
                 value={newMessage}
                 onChange={handleInputChange}
                 onKeyPress={handleKeyPress}
-                placeholder={isConnected ? "Type a message..." : "Connecting..."}
-                disabled={!isConnected}
+                // placeholder={isConnected ? "Type a message..." : "Connecting..."}
+                // disabled={!isConnected}
                 className="w-full px-4 py-3 bg-gray-100 rounded-2xl resize-none focus:outline-none focus:ring-2 focus:ring-orange-400 focus:bg-white transition-colors min-h-[44px] max-h-32 disabled:opacity-50 disabled:cursor-not-allowed"
                 rows={1}
                 style={{
@@ -474,7 +474,7 @@ const PersonalChatUI = () => {
 
             <button
               onClick={handleSendMessage}
-              disabled={!newMessage.trim() || !isConnected}
+              // disabled={!newMessage.trim() || !isConnected}
               className="p-3 bg-orange-400 text-white rounded-full hover:bg-orange-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               <Send size={18} />

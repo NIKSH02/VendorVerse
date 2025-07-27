@@ -34,42 +34,13 @@ const registerUser = asynchandler(async (req, res) => {
             email: existedUser.email,
             username: existedUser.username,
             isEmailVerified: existedUser.isEmailVerified,
-            hasRealPassword:
-              existedUser.password &&
-              !existedUser.password.startsWith("temp_password_"),
-            isTemporary: existedUser.username.startsWith("temp_"),
           }
         : "NO_USER_FOUND"
     );
 
     if (existedUser) {
-      // Check if this is a temporary user from email verification
-      const isTemporaryUser =
-        existedUser.username.startsWith("temp_") &&
-        existedUser.password.startsWith("temp_password_");
-
-      if (isTemporaryUser && existedUser.isEmailVerified) {
-        // This is a verified email but incomplete registration - update the user
-        console.log("Updating temporary user with complete registration data");
-        existedUser.username = username.toLowerCase();
-        existedUser.password = password;
-        existedUser.name = username;
-        existedUser.fullname = username;
-        existedUser.phone = `temp_${Date.now()}`;
-        await existedUser.save();
-
-        const updatedUser = await User.findById(existedUser._id).select(
-          "-password -refresh_token"
-        );
-        return res
-          .status(201)
-          .json(
-            new ApiResponse(201, "User registered successfully", updatedUser)
-          );
-      } else if (!isTemporaryUser) {
-        // User already exists and is fully registered
-        throw new apiError(409, "User with this email already exists");
-      }
+      // User already exists
+      throw new apiError(409, "User with this email already exists");
     }
 
     // Check if username is already taken
@@ -98,9 +69,9 @@ const registerUser = asynchandler(async (req, res) => {
       username: username.toLowerCase(),
       email,
       password, // Will be hashed by pre-save middleware
-      name: username, // Use username as default name
-      fullname: username, // Use username as default fullname
-      phone: `temp_${Date.now()}`, // Temporary phone number
+      name: name || username, // Use provided name or username as default
+      fullname: fullname || username, // Use provided fullname or username as default
+      phone: phone || `temp_${Date.now()}`, // Use provided phone or temporary
       address: userAddress,
       avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=6366f1&color=ffffff&size=200`,
       isEmailVerified: false, // Will be verified separately if needed
@@ -113,7 +84,15 @@ const registerUser = asynchandler(async (req, res) => {
 
     return res
       .status(201)
-      .json(new ApiResponse(201, "User registered successfully", createdUser));
+      .cookie("accessToken", accessToken, options)
+      .cookie("refreshToken", refreshToken, options)
+      .json(
+        new ApiResponse(201, "User registered successfully", {
+          user: createdUser,
+          accessToken,
+          refreshToken,
+        })
+      );
   } catch (error) {
     console.error("Registration error:", error);
 
@@ -144,14 +123,20 @@ const sendEmailVerificationOTP = asynchandler(async (req, res) => {
   // Check if user already exists with this email
   const existingUser = await User.findOne({ email });
 
-  // If user exists and is already verified, they can't request new verification
-  if (
-    existingUser &&
-    existingUser.isEmailVerified &&
-    existingUser.password &&
-    !existingUser.password.startsWith("temp_password_")
-  ) {
-    throw new apiError(409, "Email is already registered and verified");
+  // If user exists and is already fully registered, they can't request new verification
+  if (existingUser) {
+    const isFullyRegistered =
+      existingUser.isEmailVerified &&
+      existingUser.password &&
+      !existingUser.password.startsWith("temp_password_") &&
+      !existingUser.username.startsWith("temp_");
+
+    if (isFullyRegistered) {
+      throw new apiError(
+        409,
+        "Email is already registered and verified. Please use login instead."
+      );
+    }
   }
 
   // Check if someone else is trying to use this username (but different email)
@@ -351,257 +336,9 @@ const resendEmailVerificationOTP = asynchandler(async (req, res) => {
   }
 });
 
-// Send OTP for signin
-const sendSigninOTP = asynchandler(async (req, res) => {
-  const { email } = req.body;
-  console.log("Signin OTP request for email:", email);
-
-  if (!email) {
-    throw new apiError(400, "Email is required");
-  }
-
-  // Check for duplicate users with the same email
-  const allUsersWithEmail = await User.find({ email });
-  console.log(
-    "All users with this email:",
-    allUsersWithEmail.map((u) => ({
-      _id: u._id,
-      username: u.username,
-      password: u.password ? "[PRESENT]" : "[MISSING]",
-      isEmailVerified: u.isEmailVerified,
-      signinOTPLastSent: u.signinOTPLastSent,
-      createdAt: u.createdAt,
-    }))
-  );
-  // Use the user with the latest createdAt (most recent registration)
-  const user = allUsersWithEmail.sort(
-    (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
-  )[0];
-  if (!user) {
-    console.log("No user found with email:", email);
-    throw new apiError(404, "No account found with this email");
-  }
-
-  console.log("User found:", {
-    email: user.email,
-    isEmailVerified: user.isEmailVerified,
-    hasRealPassword:
-      user.password && !user.password.startsWith("temp_password_"),
-    hasRealUsername: !user.username.startsWith("temp_"),
-    isFullyRegistered:
-      user.isEmailVerified &&
-      user.password &&
-      !user.password.startsWith("temp_password_") &&
-      !user.username.startsWith("temp_"),
-  });
-
-  if (!user.isEmailVerified) {
-    throw new apiError(400, "Please verify your email first");
-  }
-
-  // Check if user is fully registered (not just email verified)
-  const isFullyRegistered =
-    user.isEmailVerified &&
-    user.password &&
-    !user.password.startsWith("temp_password_") &&
-    !user.username.startsWith("temp_");
-
-  if (!isFullyRegistered) {
-    throw new apiError(400, "Please complete your registration first");
-  }
-
-  // Check rate limiting
-  if (!canResendOTP(user.signinOTPLastSent)) {
-    throw new apiError(
-      429,
-      "Please wait 30 seconds before requesting a new OTP"
-    );
-  }
-
-  // Generate OTP
-  const otp = generateOTP();
-  const otpExpiry = generateOTPExpiry();
-
-  try {
-    // Send email
-    console.log("Sending signin OTP email to:", email);
-    await sendSigninOTPEmail(email, otp, user.username);
-
-    // Save OTP in database
-    console.log("Saving OTP data:", { otp, otpExpiry, email });
-    user.signinOTP = otp;
-    user.signinOTPExpiry = otpExpiry;
-    user.signinOTPLastSent = new Date();
-
-    console.log("User before save:", {
-      email: user.email,
-      signinOTP: user.signinOTP,
-      signinOTPExpiry: user.signinOTPExpiry,
-      signinOTPLastSent: user.signinOTPLastSent,
-    });
-
-    const savedUser = await user.save();
-
-    console.log("User after save:", {
-      email: savedUser.email,
-      signinOTP: savedUser.signinOTP,
-      signinOTPExpiry: savedUser.signinOTPExpiry,
-      signinOTPLastSent: savedUser.signinOTPLastSent,
-    });
-
-    console.log("Signin OTP sent and saved successfully");
-
-    return res
-      .status(200)
-      .json(new ApiResponse(200, "Signin OTP sent successfully", { email }));
-  } catch (error) {
-    console.error("Failed to send signin OTP:", error);
-    throw new apiError(500, "Failed to send signin OTP");
-  }
-});
-
-// Verify signin OTP
-const verifySigninOTP = asynchandler(async (req, res) => {
-  const { email, otp } = req.body;
-  console.log("Signin OTP verification request:", {
-    email,
-    otp,
-    bodyData: req.body,
-  });
-
-  if (!email || !otp) {
-    console.log("Missing email or OTP:", { email: !!email, otp: !!otp });
-    throw new apiError(400, "Email and OTP are required");
-  }
-
-  // Find all users with this email and use the one with the latest signinOTPLastSent
-  const allUsersWithEmail = await User.find({ email });
-  if (!allUsersWithEmail.length) {
-    console.log("User not found for email:", email);
-    throw new apiError(404, "User not found");
-  }
-  // Use the user with the latest signinOTPLastSent (most recent OTP)
-  const user = allUsersWithEmail.sort(
-    (a, b) =>
-      new Date(b.signinOTPLastSent || 0) - new Date(a.signinOTPLastSent || 0)
-  )[0];
-
-  console.log("User signin OTP data:", {
-    email: user.email,
-    storedOTP: user.signinOTP,
-    otpExpiry: user.signinOTPExpiry,
-    userEnteredOTP: otp,
-    currentTime: new Date(),
-    isExpired: user.signinOTPExpiry
-      ? new Date() > new Date(user.signinOTPExpiry)
-      : "NO_EXPIRY",
-  });
-
-  // Verify OTP
-  const isValid = verifyOTP(otp, user.signinOTP, user.signinOTPExpiry);
-  console.log("OTP verification result:", isValid);
-
-  if (!isValid) {
-    console.log("OTP verification failed");
-    throw new apiError(400, "Invalid or expired OTP");
-  }
-
-  console.log("OTP verified successfully, proceeding with signin");
-
-  // Clear signin OTP
-  user.signinOTP = undefined;
-  user.signinOTPExpiry = undefined;
-  user.signinOTPLastSent = undefined;
-  await user.save();
-
-  // Generate tokens
-  console.log("Generating access token for user:", user.email);
-  const accessToken = user.generateAccessToken();
-  const refreshToken = user.generateRefreshToken();
-  console.log("Generated tokens:", { accessToken, refreshToken });
-
-  // Save refresh token
-  user.refresh_token = refreshToken;
-  await user.save();
-
-  // Remove sensitive data
-  const { refresh_token, password, ...userResponse } = user.toObject();
-
-  const options = {
-    httpOnly: true,
-    secure: true,
-  };
-
-  console.log("Signin successful for user:", user.email);
-
-  return res
-    .status(200)
-    .cookie("accessToken", accessToken, options)
-    .cookie("refreshToken", refreshToken, options)
-    .json(
-      new ApiResponse(200, "Signin successful", {
-        user: userResponse,
-        accessToken,
-        refreshToken,
-      })
-    );
-});
-
-// Resend signin OTP
-const resendSigninOTP = asynchandler(async (req, res) => {
-  const { email } = req.body;
-
-  if (!email) {
-    throw new apiError(400, "Email is required");
-  }
-
-  // Find all users with this email and use the one with the latest createdAt (most recent registration)
-  const allUsersWithEmail = await User.find({ email });
-  if (!allUsersWithEmail.length) {
-    throw new apiError(404, "User not found");
-  }
-  const user = allUsersWithEmail.sort(
-    (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
-  )[0];
-
-  // Check rate limiting
-  if (!canResendOTP(user.signinOTPLastSent)) {
-    throw new apiError(
-      429,
-      "Please wait 30 seconds before requesting a new OTP"
-    );
-  }
-
-  // Generate new OTP
-  const otp = generateOTP();
-  const otpExpiry = generateOTPExpiry();
-
-  try {
-    // Send email
-    await sendSigninOTPEmail(email, otp, user.username);
-
-    // Update OTP in database
-    user.signinOTP = otp;
-    user.signinOTPExpiry = otpExpiry;
-    user.signinOTPLastSent = new Date();
-    await user.save();
-
-    return res
-      .status(200)
-      .json(
-        new ApiResponse(200, "New signin OTP sent successfully", { email })
-      );
-  } catch (error) {
-    throw new apiError(500, "Failed to resend signin OTP");
-  }
-});
-
 module.exports = {
   registerUser,
   sendEmailVerificationOTP,
   verifyEmailOTP,
   resendEmailVerificationOTP,
-  sendSigninOTP,
-  verifySigninOTP,
-  resendSigninOTP,
 };

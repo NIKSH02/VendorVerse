@@ -1,7 +1,7 @@
 // API Endpoints Configuration
 export const API_ENDPOINTS = {
     // Base URLs
-    BASE_URL: 'http://localhost:5000/api/v1',
+    BASE_URL: 'http://localhost:5001/api/v1',
     
     // Auth endpoints
     AUTH: {

@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 
 function Footer() {
   return (
-    <footer className="bg-gray-900 text-white relative overflow-hidden">
+    <footer className="bg-gray-900 text-white relative overflow-hidden rounded-t-[2rem]">
       {/* Background Pattern */}
       <div className="absolute inset-0 opacity-10">
         <div className="absolute inset-0">
