@@ -15,6 +15,9 @@ const SideBar = ({ location }) => {
         </div>
 
         <div className="flex items-center space-x-4">
+           <a className="hidden md:flex items-center space-x-2 bg-gray-100 px-3 py-2 rounded-lg" href="/">
+            <span className="text-orange-400">Home</span>
+          </a>
           {/* Location Dropdown */}
           <div className="hidden md:flex items-center space-x-2 bg-gray-100 px-3 py-2 rounded-lg">
             <span className="text-orange-400">📍</span>

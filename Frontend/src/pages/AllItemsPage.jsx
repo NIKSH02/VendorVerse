@@ -1,8 +1,47 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 
-// Extended list of items (you can add more)
+
+// Special items array
+const specialItems = [
+  {
+    id: 101,
+    name: "Boiled Potato Vada",
+    image: "/vada.jpg",
+    description: "Crispy outside, soft inside potato patties seasoned with Indian spices",
+    price: "₹40",
+    minOrder: "5 pcs",
+    available: true,
+    category: "Special",
+    subcategory: "Snacks"
+  },
+  {
+    id: 102,
+    name: "Special Coconut Chutney",
+    image: "/chutney.jpg",
+    description: "Fresh coconut ground with green chilies, ginger and special herbs",
+    price: "₹20",
+    minOrder: "1 bowl",
+    available: true,
+    category: "Special",
+    subcategory: "Side Dish"
+  },
+  {
+    id: 103,
+    name: "Masala Mix",
+    image: "/masala.jpg",
+    description: "Handcrafted blend of premium spices for authentic Indian flavors",
+    price: "₹100",
+    minOrder: "1 pack",
+    available: true,
+    category: "Special",
+    subcategory: "Spice Blend"
+  }
+];
+
+// All regular items array
 const allItems = [
   {
     id: 1,
@@ -87,58 +126,134 @@ const allItems = [
   }
 ];
 
-const categories = ['All Items', 'Vegetables', 'Spices', 'Grains'];
+const allItemsWithSpecial = [...allItems, ...specialItems];
+
+const mainCategories = ['All Items', 'Raw Items', 'Special Items'];
+const rawSubcategories = ['Vegetables', 'Spices', 'Grains'];
+const specialSubcategories = ['Snacks', 'Beverages', 'Sweets']; // Example, adjust as needed
+
 
 function AllItemsPage() {
-  const [selectedCategory, setSelectedCategory] = useState('All Items');
+  const navigate = useNavigate();
+  const [mainCategory, setMainCategory] = useState('All Items');
+  const [rawSubcategory, setRawSubcategory] = useState('All');
+  const [specialSubcategory, setSpecialSubcategory] = useState('All');
   const [sortBy, setSortBy] = useState('name');
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Filter and sort items
-  const filteredItems = allItems
-    .filter(item => {
-      const matchesCategory = selectedCategory === 'All Items' || item.category === selectedCategory;
-      const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          item.description.toLowerCase().includes(searchQuery.toLowerCase());
-      return matchesCategory && matchesSearch;
-    })
-    .sort((a, b) => {
-      if (sortBy === 'price') {
-        return parseInt(a.price.replace(/[^0-9]/g, '')) - parseInt(b.price.replace(/[^0-9]/g, ''));
-      }
-      return a[sortBy].localeCompare(b[sortBy]);
-    });
+  // On mount, check for ?sort=special or ?sort=raw in URL
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const sort = params.get('sort');
+    if (sort === 'special') {
+      setMainCategory('Special Items');
+      setSpecialSubcategory('All');
+    } else if (sort === 'raw') {
+      setMainCategory('Raw Items');
+      setRawSubcategory('All');
+    }
+  }, []);
+
+  // Filter items by main category and subcategory
+  let filteredItems = allItemsWithSpecial;
+  if (mainCategory === 'Raw Items') {
+    filteredItems = filteredItems.filter(item => ['Vegetables', 'Spices', 'Grains'].includes(item.category));
+    if (rawSubcategory !== 'All') {
+      filteredItems = filteredItems.filter(item => item.category === rawSubcategory);
+    }
+  } else if (mainCategory === 'Special Items') {
+    filteredItems = filteredItems.filter(item => item.category === 'Special');
+    if (specialSubcategory !== 'All') {
+      filteredItems = filteredItems.filter(item => item.subcategory === specialSubcategory);
+    }
+  }
+  // Search filter
+  filteredItems = filteredItems.filter(item =>
+    item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    item.description.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+  // Sort
+  filteredItems = filteredItems.sort((a, b) => {
+    if (sortBy === 'price') {
+      return parseInt(a.price.replace(/[^0-9]/g, '')) - parseInt(b.price.replace(/[^0-9]/g, ''));
+    }
+    return a[sortBy].localeCompare(b[sortBy]);
+  });
 
   return (
     <>
       <Navbar />
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-12 px-4">
+      <div className="min-h-screen bg-gray-50 py-12 px-4">
         <div className="max-w-7xl mx-auto">
           {/* Header */}
           <div className="text-center mb-12">
-            <h1 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-4">
+            <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
               All Available <span className="text-orange-500">Items</span>
             </h1>
-            <p className="text-gray-600 dark:text-gray-300">
+            <p className="text-gray-600">
               Browse our complete collection of high-quality ingredients
             </p>
           </div>
           {/* Filters and Search */}
           <div className="mb-8 flex flex-col md:flex-row gap-4 items-center justify-between">
+            {/* Subcategory Filters */}
             <div className="flex flex-wrap gap-2">
-              {categories.map(category => (
-                <button
-                  key={category}
-                  onClick={() => setSelectedCategory(category)}
-                  className={`px-4 py-2 rounded-full font-medium transition-all duration-300 ${
-                    selectedCategory === category
-                      ? 'bg-orange-500 text-white'
-                      : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                  }`}
-                >
-                  {category}
-                </button>
-              ))}
+              {mainCategory === 'Raw Items' && (
+                <>
+                  <button
+                    key="All"
+                    onClick={() => setRawSubcategory('All')}
+                    className={`px-3 py-1 rounded-full font-medium transition-all duration-300 ${
+                      rawSubcategory === 'All'
+                        ? 'bg-orange-400 text-white'
+                        : 'bg-white text-gray-700 hover:bg-gray-100'
+                    }`}
+                  >
+                    All
+                  </button>
+                  {rawSubcategories.map(subcat => (
+                    <button
+                      key={subcat}
+                      onClick={() => setRawSubcategory(subcat)}
+                      className={`px-3 py-1 rounded-full font-medium transition-all duration-300 ${
+                        rawSubcategory === subcat
+                          ? 'bg-orange-400 text-white'
+                          : 'bg-white text-gray-700 hover:bg-gray-100'
+                      }`}
+                    >
+                      {subcat}
+                    </button>
+                  ))}
+                </>
+              )}
+              {mainCategory === 'Special Items' && (
+                <>
+                  <button
+                    key="AllSpecial"
+                    onClick={() => setSpecialSubcategory('All')}
+                    className={`px-3 py-1 rounded-full font-medium transition-all duration-300 ${
+                      specialSubcategory === 'All'
+                        ? 'bg-orange-400 text-white'
+                        : 'bg-white text-gray-700 hover:bg-gray-100'
+                    }`}
+                  >
+                    All
+                  </button>
+                  {specialSubcategories.map(subcat => (
+                    <button
+                      key={subcat}
+                      onClick={() => setSpecialSubcategory(subcat)}
+                      className={`px-3 py-1 rounded-full font-medium transition-all duration-300 ${
+                        specialSubcategory === subcat
+                          ? 'bg-orange-400 text-white'
+                          : 'bg-white text-gray-700 hover:bg-gray-100'
+                      }`}
+                    >
+                      {subcat}
+                    </button>
+                  ))}
+                </>
+              )}
             </div>
 
             <div className="flex gap-4 items-center">
@@ -148,7 +263,7 @@ function AllItemsPage() {
                   placeholder="Search items..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 pr-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-orange-500 outline-none"
+                  className="pl-10 pr-4 py-2 rounded-lg border border-gray-200 bg-white text-gray-900 focus:ring-2 focus:ring-orange-500 outline-none"
                 />
                 <svg
                   className="absolute left-3 top-2.5 h-5 w-5 text-gray-400"
@@ -165,6 +280,22 @@ function AllItemsPage() {
                 </svg>
               </div>
 
+              {/* Main Category Sort Dropdown */}
+              <select
+                value={mainCategory}
+                onChange={e => {
+                  setMainCategory(e.target.value);
+                  setRawSubcategory('All');
+                  setSpecialSubcategory('All');
+                }}
+                className="px-4 py-2 rounded-lg border border-gray-200 bg-white text-gray-900 focus:ring-2 focus:ring-orange-500 outline-none"
+              >
+                {mainCategories.map(cat => (
+                  <option key={cat} value={cat}>{cat}</option>
+                ))}
+              </select>
+
+              {/* Sort By Dropdown */}
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
@@ -182,18 +313,18 @@ function AllItemsPage() {
             {filteredItems.map((item) => (
               <div
                 key={item.id}
-                className="group relative bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-2xl shadow-lg hover:shadow-2xl transform hover:-translate-y-1 transition-all duration-300"
+                className="group relative bg-gradient-to-br from-white to-gray-50 rounded-2xl shadow-lg hover:shadow-2xl transform hover:-translate-y-1 transition-all duration-300"
               >
                 {/* Category Tag */}
                 <div className="absolute top-4 left-4 z-10">
-                  <span className="px-3 py-1 rounded-full bg-orange-100 dark:bg-orange-900 text-orange-600 dark:text-orange-300 text-xs font-semibold">
+                  <span className="px-3 py-1 rounded-full bg-orange-100 text-orange-600 text-xs font-semibold">
                     {item.category}
                   </span>
                 </div>
 
                 {/* Floating Price Tag */}
                 <div className="absolute top-4 right-4 z-10">
-                  <div className="bg-black dark:bg-white text-white dark:text-black px-4 py-2 rounded-lg font-bold transform rotate-3 group-hover:rotate-0 transition-transform duration-300">
+                  <div className="bg-black text-white px-4 py-2 rounded-lg font-bold transform rotate-3 group-hover:rotate-0 transition-transform duration-300">
                     {item.price}
                   </div>
                 </div>
@@ -206,10 +337,7 @@ function AllItemsPage() {
                     alt={item.name}
                     className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-500"
                   />
-                  {/* Minimum Order Badge */}
-                  <div className="absolute bottom-4 left-4 z-20 bg-black/70 backdrop-blur-sm px-3 py-1 rounded-full">
-                    <span className="text-white text-xs">Min: {item.minOrder}</span>
-                  </div>
+                  {/* Minimum Order Badge removed */}
                 </div>
 
                 {/* Content Container */}
@@ -218,19 +346,17 @@ function AllItemsPage() {
                     {item.name}
                   </h3>
                   
-                  <p className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed mb-6">
+                  <p className="text-black text-sm leading-relaxed mb-6">
                     {item.description}
                   </p>
 
-                  {/* Action Buttons */}
+                  {/* Action Button: Place Order */}
                   <div className="flex gap-3">
-                    <button className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3 px-4 rounded-xl transition-all duration-300 transform hover:scale-105 hover:shadow-lg">
-                      Quick Order
-                    </button>
-                    <button className="w-12 h-12 flex items-center justify-center bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-xl transition-colors">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-600 dark:text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                      </svg>
+                    <button
+                      className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3 px-4 rounded-xl transition-all duration-300 transform hover:scale-105 hover:shadow-lg"
+                      onClick={() => navigate('/productdetail', { state: { item } })}
+                    >
+                      Place Order
                     </button>
                   </div>
                 </div>

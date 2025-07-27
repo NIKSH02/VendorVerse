@@ -36,7 +36,7 @@ const requestStyles = [
 
 export default function NewRequestSection() {
   return (
-    <section className="w-full py-16 px-4 bg-[#fff] dark:bg-[#181818] transition-colors duration-300">
+    <section className="w-full py-16 px-4 bg-[white]  transition-colors duration-300">
       <div className="max-w-7xl mx-auto">
         <div className="flex flex-col lg:flex-row gap-8 items-start">
           {/* Left Side Image */}
@@ -62,15 +62,15 @@ export default function NewRequestSection() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }}
             >
-              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
                 Market<span className="text-[#ff9500]"> Requests</span>
               </h2>
-              <p className="text-gray-600 dark:text-gray-300">Stay updated with the latest market demands</p>
+              <p className="text-gray-600">Stay updated with the latest market demands</p>
             </motion.div>
 
             {/* Requests Card */}
             <motion.div
-              className="bg-white dark:bg-[#23272f] rounded-2xl shadow-lg overflow-hidden"
+              className="bg-white rounded-2xl shadow-lg overflow-hidden"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.2 }}
@@ -81,11 +81,11 @@ export default function NewRequestSection() {
               </div>
 
               {/* Requests List */}
-              <div className="divide-y divide-gray-100 dark:divide-gray-800">
+              <div className="divide-y divide-gray-100">
                 {requestItems.map((item, index) => (
                   <motion.div
                     key={index}
-                    className="p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                    className="p-4 hover:bg-gray-50 transition-colors"
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.4, delay: index * 0.1 }}
@@ -121,7 +121,7 @@ export default function NewRequestSection() {
                       >
                         <div className="flex items-center justify-between mb-1">
                           <motion.h4 
-                            className="text-base font-semibold text-gray-900 dark:text-white truncate"
+                            className="text-base font-semibold text-gray-900 truncate"
                             whileHover={{ scale: 1.02 }}
                           >
                             {item.name}
@@ -136,7 +136,7 @@ export default function NewRequestSection() {
                           </motion.span>
                         </div>
                         <motion.div 
-                          className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400"
+                          className="flex items-center gap-2 text-sm text-gray-500"
                           initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ duration: 0.3, delay: index * 0.1 + 0.4 }}
@@ -146,9 +146,9 @@ export default function NewRequestSection() {
                           <span>{item.location}</span>
                           <motion.div 
                             className={`ml-2 px-2 py-0.5 rounded-full text-xs
-                              ${item.urgency === 'High' ? 'bg-red-100 text-red-600 dark:bg-red-900/30' :
-                                item.urgency === 'Medium' ? 'bg-yellow-100 text-yellow-600 dark:bg-yellow-900/30' :
-                                'bg-green-100 text-green-600 dark:bg-green-900/30'}`}
+                              ${item.urgency === 'High' ? 'bg-red-100 text-red-600' :
+                                item.urgency === 'Medium' ? 'bg-yellow-100 text-yellow-600' :
+                                'bg-green-100 text-green-600'}`}
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
                           >
@@ -163,7 +163,7 @@ export default function NewRequestSection() {
 
               {/* View All Button */}
               <motion.div 
-                className="p-4 bg-gray-50 dark:bg-gray-800/50"
+                className="p-4 bg-gray-50"
                 whileHover={{ backgroundColor: 'rgba(255, 149, 0, 0.1)' }}
               >
                 <motion.button 

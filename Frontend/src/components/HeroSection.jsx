@@ -31,20 +31,25 @@ const App = () => {
         setChatInput(''); // Clear input field
         setLoading(true); // Show loading indicator
 
-        // Prepare chat history for backend (array of {sender, message})
-        const history = [...chatHistory, { sender: 'user', message: userMessage }];
+        // Prepare chat history for backend (no longer using 'history' variable)
 
         try {
-            const API_URL = "http://localhost:5001/api/chat";
+            const API_URL = "https://chat-vendor.onrender.com/api/chat";
+            // Convert chatHistory to the format expected by the API: [{author, text}]
+            const formattedHistory = chatHistory.map(msg => ({
+                author: msg.sender === 'user' ? 'user' : 'ai',
+                text: msg.message
+            }));
+            const payload = {
+                userMessage: userMessage,
+                history: formattedHistory
+            };
             const response = await fetch(API_URL, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({
-                    userMessage: userMessage,
-                    history: history
-                })
+                body: JSON.stringify(payload)
             });
 
             if (!response.ok) {

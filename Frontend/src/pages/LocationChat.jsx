@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import io from 'socket.io-client';
 import { useAuth } from '../hooks/useAuth';
 import { Navigate } from 'react-router-dom';
+import SideBar from '../components/SideBar';
 
 const LocationChat = () => {
   const { user, isAuthenticated } = useAuth();
@@ -273,6 +274,7 @@ const LocationChat = () => {
 
   return (
     <div className="flex flex-col h-screen bg-gray-50">
+      <SideBar location={  user.address.city  } />
       {/* Header */}
       <header className="bg-white shadow-sm border-b px-4 py-3">
         <div className="flex items-center justify-between">
