@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import apiClient from '../api/axios';
 
-const categories = ['All Items', 'Vegetables', 'Spices', 'Grains', 'Fruits', 'Dairy'];
+const categories = ['All Items', 'vegetables', 'spices', 'grains', 'fruits', 'dairy'];
 
 function RawItemsSection() {
   const [products, setProducts] = useState([]);
@@ -17,14 +17,16 @@ function RawItemsSection() {
       
       let url;
       if (category && category !== 'All Items') {
-        // Fetch products by type (which is the category)
-        url = `/supplier-listing?type=${encodeURIComponent(category)}`;
+        // Fetch products by category using query parameter
+        url = `/products?category=${encodeURIComponent(category)}`;
       } else {
         // Fetch all products
         url = '/products';
       }
       
+      console.log('Fetching products from:', url, 'for category:', category);
       const response = await apiClient.get(url);
+      console.log('API Response:', response.data);
       
       if (response.data.success) {
         setProducts(response.data.data || []);
@@ -65,6 +67,12 @@ function RawItemsSection() {
     }
     return '/placeholder-product.jpg'; // Fallback image
   };
+  // Format category name for display
+  const formatCategoryName = (category) => {
+    if (category === 'All Items') return category;
+    return category.charAt(0).toUpperCase() + category.slice(1);
+  };
+
   return (
     <section className="w-full py-16 dark:bg-gray-900">
       <div className="max-w-6xl mx-auto">
@@ -90,7 +98,7 @@ function RawItemsSection() {
                   : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'
               }`}
             >
-              {category}
+              {formatCategoryName(category)}
             </button>
           ))}
         </div>
@@ -137,7 +145,7 @@ function RawItemsSection() {
                 {/* Category Tag */}
                 <div className="absolute top-4 left-4 z-10">
                   <span className="px-3 py-1 rounded-full bg-orange-100 dark:bg-orange-900 text-orange-600 dark:text-orange-300 text-xs font-semibold">
-                    {product.type}
+                    {formatCategoryName(product.category || product.type)}
                   </span>
                 </div>
 
