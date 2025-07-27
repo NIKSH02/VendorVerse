@@ -28,7 +28,7 @@ export default function AuthPage() {
 
     // Navigate to profile after successful login to complete profile
     if (successMessage.type === "login") {
-      navigate("/Profile");
+      navigate("/LocationChat");
     }
   };
 

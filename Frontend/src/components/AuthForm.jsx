@@ -208,7 +208,7 @@ export default function AuthForm({ isLogin = true, onToggle, onSuccess }) {
           "🚀 Welcome Back!",
           `Great to see you again, ${username}! You have successfully logged into your account.`
         );
-        navigate('/Profile');
+        navigate('/LocationChat');
       } catch (error) {
         console.error("Login failed:", error);
       }

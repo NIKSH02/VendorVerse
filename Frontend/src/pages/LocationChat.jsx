@@ -6,10 +6,12 @@ import { Navigate } from 'react-router-dom';
 const LocationChat = () => {
   const { user, isAuthenticated } = useAuth();
 
+  console.log('user in location chat : ' , JSON.stringify(user));
+  console.log("isauth in location chat. " , isAuthenticated);
   // Redirect if not authenticated
-//   if (!isAuthenticated || !user) {
-//     return <Navigate to="/" />;
-//   }
+  if (!isAuthenticated || !user) {
+    return <Navigate to="/" replace />;
+  }
 
   const currentUser = {
     userId: user._id,
