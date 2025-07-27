@@ -53,30 +53,6 @@ const authAPI = {
     return response.data;
   },
 
-  // Email OTP signin
-  sendSigninOTP: async (email) => {
-    const response = await apiClient.post("/users/send-signin-otp", {
-      email,
-    });
-    console.log(response);
-    return response.data;
-  },
-
-  verifySigninOTP: async (email, otp) => {
-    const response = await apiClient.post("/users/verify-signin-otp", {
-      email,
-      otp,
-    });
-    return response.data;
-  },
-
-  resendSigninOTP: async (email) => {
-    const response = await apiClient.post("/users/resend-signin-otp", {
-      email,
-    });
-    return response.data;
-  },
-
   // Logout
   logout: async () => {
     const response = await apiClient.post("/users/logout");
