@@ -19,6 +19,16 @@ const groupMessageSchema = new mongoose.Schema({
     required: true,
     index: true // Index for faster location-based queries
   },
+  coordinates: {
+    lat: {
+      type: Number,
+      default: 0
+    },
+    lng: {
+      type: Number,
+      default: 0
+    }
+  },
   timestamp: {
     type: Date,
     default: Date.now

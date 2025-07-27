@@ -7,6 +7,7 @@ const fileUpload = require('express-fileupload');
 const socketIo = require('socket.io');
 const rateLimit = require('express-rate-limit');
 const http = require('http');
+const mongoose = require('mongoose');
 
 // Load environment variables from .env file
 dotenv.config();
@@ -22,7 +23,11 @@ const server = http.createServer(app);
 // Socket.io setup with CORS
 const io = socketIo(server, {
   cors: {
-    origin: process.env.FRONTEND_URL || "http://localhost:3000",
+    origin: [
+      "http://localhost:3000",
+      "http://localhost:5173", 
+      process.env.FRONTEND_URL
+    ].filter(Boolean),
     methods: ["GET", "POST"],
     credentials: true
   },
@@ -90,7 +95,7 @@ const groupchatroute = require('./src/routes/groupchat.route.js')
 app.use('/api/', limiter);
 app.use('/api/messages/', messageLimiter);
 
-app.use('/api/messages/:location', groupchatroute)
+app.use('/api/messages', groupchatroute)
 
 // Define routes
 app.use('/api/users', userRouter);    // Mount the user router at the correct endpoint
