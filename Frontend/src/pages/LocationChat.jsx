@@ -6,20 +6,7 @@ import { Navigate } from 'react-router-dom';
 const LocationChat = () => {
   const { user, isAuthenticated } = useAuth();
 
-  console.log('user in location chat : ' , JSON.stringify(user));
-  console.log("isauth in location chat. " , isAuthenticated);
-  // Redirect if not authenticated
-  if (!isAuthenticated || !user) {
-    return <Navigate to="/" replace />;
-  }
-
-  const currentUser = {
-    userId: user._id,
-    userName: user.name,
-    location: user.address?.city || 'Unknown Location'
-  };
-
-  // State management
+  // State management (hooks must be called first)
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [isConnected, setIsConnected] = useState(false);
@@ -34,8 +21,18 @@ const LocationChat = () => {
   const messagesEndRef = useRef(null);
   const typingTimeoutRef = useRef(null);
 
-  // Initialize socket connection
+  // Create currentUser with safe defaults
+  const currentUser = {
+    userId: user?._id || 'anonymous',
+    userName: user?.name || 'Anonymous',
+    location: user?.address?.city || 'Unknown Location'
+  };
+
+  // Initialize socket connection (hook must be called before any returns)
   useEffect(() => {
+    // Don't initialize socket if user is not authenticated
+    if (!isAuthenticated || !user) return;
+
     const serverUrl ='http://localhost:5001';
     
     socketRef.current = io(serverUrl, {
@@ -121,10 +118,13 @@ const LocationChat = () => {
         socket.disconnect();
       }
     };
-  }, [currentUser.userId, currentUser.userName, currentUser.location]);
+  }, [currentUser.userId, currentUser.userName, currentUser.location, isAuthenticated, user]);
 
-  // Load chat history
+  // Load chat history (must be called before any returns)
   useEffect(() => {
+    // Don't load chat history if user is not authenticated
+    if (!isAuthenticated || !user) return;
+
     const loadChatHistory = async () => {
       try {
         setIsLoading(true);
@@ -150,12 +150,28 @@ const LocationChat = () => {
     if (currentUser.location) {
       loadChatHistory();
     }
-  }, [currentUser.location]);
+  }, [currentUser.location, isAuthenticated, user]);
 
-  // Auto-scroll to bottom when new messages arrive
+  // Auto-scroll to bottom when new messages arrive (must be called before any returns)
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  console.log('user in location chat : ' , JSON.stringify(user));
+  console.log("isauth in location chat. " , isAuthenticated);
+
+  // Since this is now a protected route, user should always be authenticated
+  // But we'll keep a safety check just in case
+  if (!user) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading user data...</p>
+        </div>
+      </div>
+    );
+  }
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });

@@ -1,229 +1,180 @@
-import React, { createContext, useReducer, useEffect } from "react";
+import React, { createContext, useState, useEffect } from "react";
 import authAPI from "../services/authService";
 
 // Auth Context
 const AuthContext = createContext();
 
-// Auth Actions
-const AUTH_ACTIONS = {
-  SET_LOADING: "SET_LOADING",
-  SET_USER: "SET_USER",
-  SET_ERROR: "SET_ERROR",
-  CLEAR_ERROR: "CLEAR_ERROR",
-  LOGOUT: "LOGOUT",
-  SET_EMAIL_VERIFIED: "SET_EMAIL_VERIFIED",
-  SET_EMAIL_VERIFICATION_SENT: "SET_EMAIL_VERIFICATION_SENT",
-  SET_IS_VERIFYING_OTP: "SET_IS_VERIFYING_OTP",
-};
-
-// Initial state
-const initialState = {
-  user: null,
-  isAuthenticated: false,
-  isLoading: false,
-  error: null,
-  isEmailVerified: false,
-  emailVerificationSent: false,
-  isVerifyingOtp: false,
-};
-
-// Auth Reducer
-const authReducer = (state, action) => {
-  switch (action.type) {
-    case AUTH_ACTIONS.SET_LOADING:
-      return {
-        ...state,
-        isLoading: action.payload,
-        error: null,
-      };
-
-    case AUTH_ACTIONS.SET_USER:
-      console.log("AuthContext: SET_USER action triggered", {
-        user: action.payload,
-        isAuthenticated: !!action.payload
-      });
-      return {
-        ...state,
-        user: action.payload,
-        isAuthenticated: !!action.payload,
-        isLoading: false,
-        error: null,
-      };
-
-    case AUTH_ACTIONS.SET_ERROR:
-      return {
-        ...state,
-        error: action.payload,
-        isLoading: false,
-      };
-
-    case AUTH_ACTIONS.CLEAR_ERROR:
-      return {
-        ...state,
-        error: null,
-      };
-
-    case AUTH_ACTIONS.LOGOUT:
-      localStorage.removeItem("accessToken");
-      localStorage.removeItem("user");
-      return {
-        ...initialState,
-      };
-
-    case AUTH_ACTIONS.SET_EMAIL_VERIFIED:
-      return {
-        ...state,
-        isEmailVerified: action.payload,
-      };
-
-    case AUTH_ACTIONS.SET_EMAIL_VERIFICATION_SENT:
-      return {
-        ...state,
-        emailVerificationSent: action.payload,
-      };
-
-    case AUTH_ACTIONS.SET_IS_VERIFYING_OTP:
-      return {
-        ...state,
-        isVerifyingOtp: action.payload,
-      };
-
-    default:
-      return state;
-  }
-};
-
 // Auth Provider Component
 export const AuthProvider = ({ children }) => {
-  const [state, dispatch] = useReducer(authReducer, initialState);
+  const [user, setUser] = useState(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [isEmailVerified, setIsEmailVerified] = useState(false);
+  const [emailVerificationSent, setEmailVerificationSent] = useState(false);
+  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
 
-  // Check if user is logged in on app start
+  // Initialize auth state on mount
   useEffect(() => {
-    const checkAuth = async () => {
+    const initializeAuth = async () => {
+      console.log("AuthContext: Initializing auth...");
       const token = localStorage.getItem("accessToken");
       const savedUser = localStorage.getItem("user");
 
       if (token && savedUser) {
         try {
-          dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: true });
+          console.log("AuthContext: Found token and saved user, verifying...");
           const response = await authAPI.getCurrentUser();
-          dispatch({ type: AUTH_ACTIONS.SET_USER, payload: response.data });
-        } catch {
-          // Token might be invalid
-          dispatch({ type: AUTH_ACTIONS.LOGOUT });
-        } finally {
-          dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: false });
+          console.log("AuthContext: Server verification successful");
+          
+          setUser(response.data);
+          setIsAuthenticated(true);
+          localStorage.setItem("user", JSON.stringify(response.data));
+        } catch (error) {
+          console.log("AuthContext: Server verification failed:", error);
+          
+          // Only logout if it's definitely an auth error (401/403)
+          if (error.response?.status === 401 || error.response?.status === 403) {
+            console.log("AuthContext: Invalid token, clearing auth");
+            clearAuth();
+          } else {
+            // For network errors, restore from localStorage
+            console.log("AuthContext: Network error, restoring from localStorage");
+            try {
+              const parsedUser = JSON.parse(savedUser);
+              setUser(parsedUser);
+              setIsAuthenticated(true);
+              // Clear potentially invalid token
+              localStorage.removeItem("accessToken");
+            } catch {
+              console.log("AuthContext: Failed to parse saved user");
+              clearAuth();
+            }
+          }
         }
+      } else {
+        console.log("AuthContext: No token or saved user found");
       }
+      
+      setIsLoading(false);
+      console.log("AuthContext: Initialization complete");
     };
 
-    checkAuth();
+    initializeAuth();
   }, []);
+
+  // Helper function to clear auth state
+  const clearAuth = () => {
+    console.log("AuthContext: Clearing auth state");
+    setUser(null);
+    setIsAuthenticated(false);
+    setIsEmailVerified(false);
+    setEmailVerificationSent(false);
+    setIsVerifyingOtp(false);
+    setError(null);
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("user");
+  };
+
+  // Helper function to set authenticated user
+  const setAuthenticatedUser = (userData, token = null) => {
+    console.log("AuthContext: Setting authenticated user");
+    setUser(userData);
+    setIsAuthenticated(true);
+    setError(null);
+    
+    if (token) {
+      localStorage.setItem("accessToken", token);
+    }
+    localStorage.setItem("user", JSON.stringify(userData));
+  };
 
   // Email verification functions (Signup)
   const sendVerificationOTP = async (email, username) => {
     try {
-      dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: true });
+      setIsLoading(true);
+      setError(null);
       const response = await authAPI.sendVerificationOTP(email, username);
-      dispatch({
-        type: AUTH_ACTIONS.SET_EMAIL_VERIFICATION_SENT,
-        payload: true,
-      });
+      setEmailVerificationSent(true);
       return response;
     } catch (error) {
-      const errorMessage =
-        error.response?.data?.message || "Failed to send verification OTP";
-      dispatch({ type: AUTH_ACTIONS.SET_ERROR, payload: errorMessage });
+      const errorMessage = error.response?.data?.message || "Failed to send verification OTP";
+      setError(errorMessage);
       throw error;
     } finally {
-      dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: false });
+      setIsLoading(false);
     }
   };
 
   const verifyEmailOTP = async (email, otp) => {
     try {
-      dispatch({ type: AUTH_ACTIONS.SET_IS_VERIFYING_OTP, payload: true });
+      setIsVerifyingOtp(true);
+      setError(null);
       const response = await authAPI.verifyEmailOTP(email, otp);
-      dispatch({ type: AUTH_ACTIONS.SET_EMAIL_VERIFIED, payload: true });
-      dispatch({ type: AUTH_ACTIONS.SET_IS_VERIFYING_OTP, payload: false });
+      setIsEmailVerified(true);
       return response;
     } catch (error) {
-      dispatch({ type: AUTH_ACTIONS.SET_IS_VERIFYING_OTP, payload: false });
-      const errorMessage =
-        error.response?.data?.message || "Invalid or expired OTP";
-      dispatch({ type: AUTH_ACTIONS.SET_ERROR, payload: errorMessage });
+      const errorMessage = error.response?.data?.message || "Invalid or expired OTP";
+      setError(errorMessage);
       throw error;
+    } finally {
+      setIsVerifyingOtp(false);
     }
   };
 
   const resendVerificationOTP = async (email, username) => {
     try {
-      dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: true });
+      setIsLoading(true);
+      setError(null);
       const response = await authAPI.resendVerificationOTP(email, username);
       return response;
     } catch (error) {
-      const errorMessage =
-        error.response?.data?.message || "Failed to resend OTP";
-      dispatch({ type: AUTH_ACTIONS.SET_ERROR, payload: errorMessage });
+      const errorMessage = error.response?.data?.message || "Failed to resend OTP";
+      setError(errorMessage);
       throw error;
     } finally {
-      dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: false });
+      setIsLoading(false);
     }
   };
 
   // Registration
   const register = async (userData) => {
     try {
-      dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: true });
+      setIsLoading(true);
+      setError(null);
       const response = await authAPI.register(userData);
       
-      // Check if the response contains user and token data
+      // Handle the response
       if (response.data && response.data.user) {
-        dispatch({ type: AUTH_ACTIONS.SET_USER, payload: response.data.user });
-
-        // Save to localStorage if tokens are provided
-        if (response.data.accessToken) {
-          localStorage.setItem("accessToken", response.data.accessToken);
-          localStorage.setItem("user", JSON.stringify(response.data.user));
-        }
+        setAuthenticatedUser(response.data.user, response.data.accessToken);
       } else {
-        // Fallback for older response format
-        dispatch({ type: AUTH_ACTIONS.SET_USER, payload: response.data });
-        localStorage.setItem("user", JSON.stringify(response.data));
+        setAuthenticatedUser(response.data);
       }
 
-      dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: false });
       return response;
     } catch (error) {
-      const errorMessage =
-        error.response?.data?.message || "Registration failed";
-      dispatch({ type: AUTH_ACTIONS.SET_ERROR, payload: errorMessage });
-      dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: false });
+      const errorMessage = error.response?.data?.message || "Registration failed";
+      setError(errorMessage);
       throw error;
+    } finally {
+      setIsLoading(false);
     }
   };
 
   // Login with email/username & password
   const loginWithPassword = async (emailOrUsername, password) => {
     try {
-      dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: true });
-      const response = await authAPI.loginWithPassword(
-        emailOrUsername,
-        password
-      );
-      dispatch({ type: AUTH_ACTIONS.SET_USER, payload: response.data.user });
-
-      // Save to localStorage
-      localStorage.setItem("accessToken", response.data.accessToken);
-      localStorage.setItem("user", JSON.stringify(response.data.user));
-
+      setIsLoading(true);
+      setError(null);
+      const response = await authAPI.loginWithPassword(emailOrUsername, password);
+      setAuthenticatedUser(response.data.user, response.data.accessToken);
       return response;
     } catch (error) {
       const errorMessage = error.response?.data?.message || "Login failed";
-      dispatch({ type: AUTH_ACTIONS.SET_ERROR, payload: errorMessage });
+      setError(errorMessage);
       throw error;
     } finally {
-      dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: false });
+      setIsLoading(false);
     }
   };
 
@@ -234,54 +185,67 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       console.error("Logout error:", error);
     } finally {
-      dispatch({ type: AUTH_ACTIONS.LOGOUT });
+      clearAuth();
     }
   };
 
   // Clear error
   const clearError = () => {
-    dispatch({ type: AUTH_ACTIONS.CLEAR_ERROR });
+    setError(null);
   };
 
   // Update account details
   const updateAccountDetails = async (userData) => {
     try {
-      dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: true });
+      setIsLoading(true);
+      setError(null);
       const response = await authAPI.updateAccountDetails(userData);
-      dispatch({ type: AUTH_ACTIONS.SET_USER, payload: response.data });
-
-      // Update localStorage
+      setUser(response.data);
       localStorage.setItem("user", JSON.stringify(response.data));
-
       return response;
     } catch (error) {
-      const errorMessage =
-        error.response?.data?.message || "Failed to update account details";
-      dispatch({ type: AUTH_ACTIONS.SET_ERROR, payload: errorMessage });
+      const errorMessage = error.response?.data?.message || "Failed to update account details";
+      setError(errorMessage);
       throw error;
     } finally {
-      dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: false });
+      setIsLoading(false);
     }
   };
 
   // Change password
   const changePassword = async (oldPassword, newPassword) => {
     try {
-      dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: true });
+      setIsLoading(true);
+      setError(null);
       const response = await authAPI.changePassword(oldPassword, newPassword);
       return response;
     } catch (error) {
-      const errorMessage =
-        error.response?.data?.message || "Failed to change password";
-      dispatch({ type: AUTH_ACTIONS.SET_ERROR, payload: errorMessage });
+      const errorMessage = error.response?.data?.message || "Failed to change password";
+      setError(errorMessage);
       throw error;
     } finally {
-      dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: false });
+      setIsLoading(false);
     }
   };
 
+  // Debug: Log state changes
+  useEffect(() => {
+    console.log("AuthContext State Changed:", {
+      isAuthenticated,
+      isLoading,
+      user: user ? 'USER_EXISTS' : 'NO_USER',
+      error: error ? 'ERROR_EXISTS' : 'NO_ERROR'
+    });
+  }, [isAuthenticated, isLoading, user, error]);
+
   const value = {
-    ...state,
+    user,
+    isAuthenticated,
+    isLoading,
+    error,
+    isEmailVerified,
+    emailVerificationSent,
+    isVerifyingOtp,
     sendVerificationOTP,
     verifyEmailOTP,
     resendVerificationOTP,
@@ -292,6 +256,7 @@ export const AuthProvider = ({ children }) => {
     updateAccountDetails,
     changePassword,
   };
+
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
