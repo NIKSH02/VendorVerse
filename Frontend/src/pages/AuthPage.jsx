@@ -1,15 +1,17 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import FeatureList from "../components/FeatureList";
 import AuthForm from "../components/AuthForm";
 import SuccessMessage from "../components/SuccessMessage";
 
 export default function AuthPage() {
+  const navigate = useNavigate();
   const [isLogin, setIsLogin] = useState(true);
   const [successMessage, setSuccessMessage] = useState({
     show: false,
-    type: 'signup',
-    title: '',
-    message: ''
+    type: "signup",
+    title: "",
+    message: "",
   });
 
   const showSuccessMessage = (type, title, message) => {
@@ -17,12 +19,17 @@ export default function AuthPage() {
       show: true,
       type,
       title,
-      message
+      message,
     });
   };
 
   const hideSuccessMessage = () => {
-    setSuccessMessage(prev => ({ ...prev, show: false }));
+    setSuccessMessage((prev) => ({ ...prev, show: false }));
+
+    // Navigate to profile after successful login to complete profile
+    if (successMessage.type === "login") {
+      navigate("/Profile");
+    }
   };
 
   return (

@@ -1,6 +1,17 @@
 import { useState, useEffect } from "react";
-import { FaEye, FaEyeSlash, FaCheck, FaClock, FaUser, FaEnvelope } from "react-icons/fa";
+import {
+  FaEye,
+  FaEyeSlash,
+  FaCheck,
+  FaClock,
+  FaUser,
+  FaEnvelope,
+  FaSpinner,
+} from "react-icons/fa";
 import { useAuth } from "../hooks/useAuth";
+import { useNavigate } from "react-router-dom";
+
+
 
 export default function AuthForm({ isLogin = true, onToggle, onSuccess }) {
   const {
@@ -21,7 +32,6 @@ export default function AuthForm({ isLogin = true, onToggle, onSuccess }) {
     signinOtpVerified,
     isVerifyingSigninOtp,
     resetSigninOtpStates,
-  
   } = useAuth();
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
@@ -32,6 +42,9 @@ export default function AuthForm({ isLogin = true, onToggle, onSuccess }) {
   const [countdown, setCountdown] = useState(0);
   const [signinEmail, setSigninEmail] = useState("");
   const [signinCountdown, setSigninCountdown] = useState(0);
+
+
+  let navigate = useNavigate();
 
   // Countdown timer effects
   useEffect(() => {
@@ -57,7 +70,7 @@ export default function AuthForm({ isLogin = true, onToggle, onSuccess }) {
         setCountdown(60);
         setOtp("");
       } catch (error) {
-        console.error('Failed to send verification OTP:', error);
+        console.error("Failed to send verification OTP:", error);
       }
     }
   };
@@ -68,7 +81,7 @@ export default function AuthForm({ isLogin = true, onToggle, onSuccess }) {
       setCountdown(60);
       setOtp("");
     } catch (error) {
-      console.error('Failed to resend OTP:', error);
+      console.error("Failed to resend OTP:", error);
     }
   };
 
@@ -79,7 +92,7 @@ export default function AuthForm({ isLogin = true, onToggle, onSuccess }) {
         setSigninCountdown(60);
         setSigninOtp("");
       } catch (error) {
-        console.error('Failed to send signin OTP:', error);
+        console.error("Failed to send signin OTP:", error);
       }
     }
   };
@@ -90,7 +103,7 @@ export default function AuthForm({ isLogin = true, onToggle, onSuccess }) {
       setSigninCountdown(60);
       setSigninOtp("");
     } catch (error) {
-      console.error('Failed to resend signin OTP:', error);
+      console.error("Failed to resend signin OTP:", error);
     }
   };
 
@@ -100,16 +113,16 @@ export default function AuthForm({ isLogin = true, onToggle, onSuccess }) {
         await verifySigninOTP(signinEmail, signinOtp);
         // Signin successful - show success message in purple/ethesis style
         onSuccess?.(
-          'login',
-          '🎉 Signed In Successfully!',
+          "login",
+          "🎉 Signed In Successfully!",
           `Welcome back! You have been signed in via OTP.`,
           {
-            color: 'bg-gradient-to-r from-purple-600 to-indigo-500 text-white',
-            border: 'border-2 border-purple-400'
+            color: "bg-gradient-to-r from-purple-600 to-indigo-500 text-white",
+            border: "border-2 border-purple-400",
           }
         );
       } catch (error) {
-        console.error('Failed to verify signin OTP:', error);
+        console.error("Failed to verify signin OTP:", error);
       }
     }
   };
@@ -120,125 +133,157 @@ export default function AuthForm({ isLogin = true, onToggle, onSuccess }) {
         await verifyEmailOTP(email, otp);
         // Email verified successfully - show success message
         onSuccess?.(
-          'verification',
-          '✅ Email Verified!',
-          'Great! Your email has been verified successfully. You can now complete your registration.'
+          "verification",
+          "✅ Email Verified!",
+          "Great! Your email has been verified successfully. You can now complete your registration."
         );
       } catch (error) {
-        console.error('Failed to verify email OTP:', error);
+        console.error("Failed to verify email OTP:", error);
       }
     }
   };
 
   const handleSignup = async () => {
-    console.log('Frontend form data before registration:', { username, email, password: password.length > 0 ? '[PRESENT]' : '[MISSING]', fullname: username });
-    if (isEmailVerified && password.length >= 6) {
-      try {
-        const response = await register({
-          username,
-          email,
-          password,
-          fullname: username
-        });
-        
-        console.log('Registration response:', response);
-        
-        // Check if registration was successful from backend
-        // The response is the data from ApiResponse, which includes success property
-        if (response && (response.success === true || response.status === 201)) {
-          // Registration successful - show success message
-          onSuccess?.(
-            'signup',
-            '🎉 Registration Successful!',
-            `Welcome ${username}! Your account has been created successfully. You can now enjoy all the features of our platform!`
-          );
-          console.log('Registration successful for user:', username);
-        } else {
-          console.error('Registration failed: No success response from backend');
-          alert('Registration failed. Please try again.');
-        }
-      } catch (error) {
-        console.error('Registration failed:', error);
-        // Show error message to user
-        const errorMessage = error.response?.data?.message || error.message || 'Registration failed. Please try again.';
-        alert(`Registration failed: ${errorMessage}`);
+    console.log("Frontend form data before registration:", {
+      username,
+      email,
+      password: password.length > 0 ? "[PRESENT]" : "[MISSING]",
+      fullname: username,
+    });
+
+    // Validate required fields
+    if (!isEmailVerified || password.length < 6) {
+      alert(
+        "Please verify your email and ensure password is at least 6 characters long."
+      );
+      return;
+    }
+
+    // Prepare basic registration data (no location during registration)
+    const registrationData = {
+      username,
+      email,
+      password,
+      fullname: username,
+      name: username, // Display name
+      phone: "", // Will be completed in profile later
+    };
+
+    try {
+      const response = await register(registrationData);
+
+      console.log("Registration response:", response);
+
+      // Check if registration was successful from backend
+      if (response && (response.success === true || response.status === 201)) {
+        // Registration successful - show success message
+        onSuccess?.(
+          "signup",
+          "🎉 Registration Successful!",
+          `Welcome ${username}! Your account has been created successfully. You can now login and complete your profile!`
+        );
+        console.log("Registration successful for user:", username);
+      } else {
+        console.error("Registration failed: No success response from backend");
+        alert("Registration failed. Please try again.");
       }
-    } else {
-      // Show validation error
-      if (!isEmailVerified) {
-        alert('Please verify your email first.');
-      } else if (password.length < 6) {
-        alert('Password must be at least 6 characters long.');
-      }
+    } catch (error) {
+      console.error("Registration failed:", error);
+      // Show error message to user
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        "Registration failed. Please try again.";
+      alert(`Registration failed: ${errorMessage}`);
     }
   };
 
   const handleLoginWithPassword = async () => {
-    if (signinMethod === 'username' && password.length >= 1) {
+    if (signinMethod === "username" && password.length >= 1) {
       try {
         await loginWithPassword(username, password);
         // Login successful - show success message
         onSuccess?.(
-          'login',
-          '🚀 Welcome Back!',
+          "login",
+          "🚀 Welcome Back!",
           `Great to see you again, ${username}! You have successfully logged into your account.`
         );
+        navigate('/Profile');
       } catch (error) {
-        console.error('Login failed:', error);
+        console.error("Login failed:", error);
       }
     }
   };
 
   const isSignupEnabled = isLogin || (isEmailVerified && password.length >= 6);
-  const isSigninEnabled = !isLogin || (
-    signinMethod === 'username' ? password.length >= 1 :
-    signinMethod === 'email' ? signinOtpVerified : false
-  );
+  const isSigninEnabled =
+    !isLogin ||
+    (signinMethod === "username"
+      ? password.length >= 1
+      : signinMethod === "email"
+      ? signinOtpVerified
+      : false);
 
   return (
     <div className="bg-white shadow-md rounded-xl p-8 w-full max-w-md">
-      <h2 className="text-2xl font-bold mb-6">{isLogin ? "Sign in" : "Sign up"}</h2>
-      
+      <h2 className="text-2xl font-bold mb-6">
+        {isLogin ? "Sign in" : "Sign up"}
+      </h2>
+
       {/* Signin Method Selection */}
       {isLogin && !signinMethod && (
         <div className="mb-6">
-          <p className="text-sm text-gray-600 mb-4 text-center">Choose your sign in method</p>
+          <p className="text-sm text-gray-600 mb-4 text-center">
+            Choose your sign in method
+          </p>
           <div className="grid grid-cols-2 gap-3">
             <button
               type="button"
-              onClick={() => setSigninMethod('username')}
+              onClick={() => setSigninMethod("username")}
               className="flex flex-col items-center p-4 border-2 border-gray-200 rounded-lg hover:border-gray-400 hover:bg-gray-50 transition-all group"
             >
-              <FaUser className="text-gray-500 group-hover:text-gray-700 mb-2" size={20} />
-              <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900">Username</span>
-              <span className="text-xs text-gray-500">Use username & password</span>
+              <FaUser
+                className="text-gray-500 group-hover:text-gray-700 mb-2"
+                size={20}
+              />
+              <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900">
+                Username/Email
+              </span>
+              <span className="text-xs text-gray-500">
+                Use credentials & password
+              </span>
             </button>
-            
+
             <button
               type="button"
-              onClick={() => setSigninMethod('email')}
+              onClick={() => setSigninMethod("email")}
               className="flex flex-col items-center p-4 border-2 border-gray-200 rounded-lg hover:border-gray-400 hover:bg-gray-50 transition-all group"
             >
-              <FaEnvelope className="text-gray-500 group-hover:text-gray-700 mb-2" size={20} />
-              <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900">Email ID</span>
+              <FaEnvelope
+                className="text-gray-500 group-hover:text-gray-700 mb-2"
+                size={20}
+              />
+              <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900">
+                Email ID
+              </span>
               <span className="text-xs text-gray-500">Use email & OTP</span>
             </button>
           </div>
         </div>
       )}
-      
-      {/* Username */}
-      {(!isLogin || signinMethod === 'username') && (
+
+      {/* Username or Email */}
+      {(!isLogin || signinMethod === "username") && (
         <div className="mb-4">
           <label className="block mb-2 text-sm font-medium text-gray-700">
-            Username
+            Username or Email
           </label>
           <input
             type="text"
-            placeholder="@john_doe"
+            placeholder="@john_doe or example@mail.com"
             value={username}
             onChange={(e) => {
-              console.log('Username changed:', e.target.value);
+              console.log("Username/Email changed:", e.target.value);
               setUsername(e.target.value);
             }}
             className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400"
@@ -247,7 +292,7 @@ export default function AuthForm({ isLogin = true, onToggle, onSuccess }) {
       )}
 
       {/* Signin Email (only for email signin method) */}
-      {isLogin && signinMethod === 'email' && (
+      {isLogin && signinMethod === "email" && (
         <div className="mb-4">
           <label className="block mb-2 text-sm font-medium text-gray-700">
             Email ID
@@ -260,7 +305,7 @@ export default function AuthForm({ isLogin = true, onToggle, onSuccess }) {
               onChange={(e) => setSigninEmail(e.target.value)}
               disabled={signinOtpVerified}
               className={`flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400 ${
-                signinOtpVerified ? 'bg-green-50 border-green-300' : ''
+                signinOtpVerified ? "bg-green-50 border-green-300" : ""
               }`}
             />
             {!signinOtpSent && (
@@ -279,7 +324,7 @@ export default function AuthForm({ isLogin = true, onToggle, onSuccess }) {
               </div>
             )}
           </div>
-          
+
           {/* Signin email verification status */}
           {signinOtpSent && !signinOtpVerified && (
             <div className="mt-2">
@@ -289,7 +334,7 @@ export default function AuthForm({ isLogin = true, onToggle, onSuccess }) {
               </p>
               {signinCountdown > 0 ? (
                 <p className="text-xs text-gray-500 mt-1">
-                  Resend OTP in 0:{signinCountdown.toString().padStart(2, '0')}
+                  Resend OTP in 0:{signinCountdown.toString().padStart(2, "0")}
                 </p>
               ) : (
                 <button
@@ -312,41 +357,46 @@ export default function AuthForm({ isLogin = true, onToggle, onSuccess }) {
       )}
 
       {/* Signin OTP Input */}
-      {isLogin && signinMethod === 'email' && signinOtpSent && !signinOtpVerified && (
-        <div className="mb-4">
-          <label className="block mb-2 text-sm font-medium text-gray-700">
-            Enter OTP
-          </label>
-          <div className="flex gap-2">
-            <input
-              type="text"
-              placeholder="123456"
-              value={signinOtp}
-              onChange={(e) => setSigninOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
-              className="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-black"
-              maxLength={6}
-            />
-            <button
-              type="button"
-              onClick={handleVerifySigninOtp}
-              disabled={signinOtp.length !== 6 || isVerifyingSigninOtp}
-              className="px-4 py-2 bg-gradient-to-b from-gray-900 to-gray-700 text-white rounded-lg hover:opacity-90 disabled:bg-gray-300 disabled:cursor-not-allowed transition text-sm whitespace-nowrap flex items-center gap-1"
-            >
-              {isVerifyingSigninOtp ? (
-                <>
-                  <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full"></div>
-                  Signing in...
-                </>
-              ) : (
-                'Sign in'
-              )}
-            </button>
+      {isLogin &&
+        signinMethod === "email" &&
+        signinOtpSent &&
+        !signinOtpVerified && (
+          <div className="mb-4">
+            <label className="block mb-2 text-sm font-medium text-gray-700">
+              Enter OTP
+            </label>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                placeholder="123456"
+                value={signinOtp}
+                onChange={(e) =>
+                  setSigninOtp(e.target.value.replace(/\D/g, "").slice(0, 6))
+                }
+                className="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-black"
+                maxLength={6}
+              />
+              <button
+                type="button"
+                onClick={handleVerifySigninOtp}
+                disabled={signinOtp.length !== 6 || isVerifyingSigninOtp}
+                className="px-4 py-2 bg-gradient-to-b from-gray-900 to-gray-700 text-white rounded-lg hover:opacity-90 disabled:bg-gray-300 disabled:cursor-not-allowed transition text-sm whitespace-nowrap flex items-center gap-1"
+              >
+                {isVerifyingSigninOtp ? (
+                  <>
+                    <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full"></div>
+                    Signing in...
+                  </>
+                ) : (
+                  "Sign in"
+                )}
+              </button>
+            </div>
+            <p className="text-xs text-black mt-1">
+              Enter the 6-digit code sent to your email
+            </p>
           </div>
-          <p className="text-xs text-black mt-1">
-            Enter the 6-digit code sent to your email
-          </p>
-        </div>
-      )}
+        )}
 
       {/* Email (only for register) */}
       {!isLogin && (
@@ -360,12 +410,12 @@ export default function AuthForm({ isLogin = true, onToggle, onSuccess }) {
               placeholder="example@mail.com"
               value={email}
               onChange={(e) => {
-                console.log('Email changed:', e.target.value);
+                console.log("Email changed:", e.target.value);
                 setEmail(e.target.value);
               }}
               disabled={isEmailVerified}
               className={`flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400 ${
-                isEmailVerified ? 'bg-green-50 border-green-300' : ''
+                isEmailVerified ? "bg-green-50 border-green-300" : ""
               }`}
             />
             {!emailVerificationSent && (
@@ -384,7 +434,7 @@ export default function AuthForm({ isLogin = true, onToggle, onSuccess }) {
               </div>
             )}
           </div>
-          
+
           {/* Email verification status */}
           {emailVerificationSent && !isEmailVerified && (
             <div className="mt-2">
@@ -394,7 +444,7 @@ export default function AuthForm({ isLogin = true, onToggle, onSuccess }) {
               </p>
               {countdown > 0 ? (
                 <p className="text-xs text-gray-500 mt-1">
-                  Resend OTP in 0:{countdown.toString().padStart(2, '0')}
+                  Resend OTP in 0:{countdown.toString().padStart(2, "0")}
                 </p>
               ) : (
                 <button
@@ -427,7 +477,9 @@ export default function AuthForm({ isLogin = true, onToggle, onSuccess }) {
               type="text"
               placeholder="123456"
               value={otp}
-              onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+              onChange={(e) =>
+                setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))
+              }
               className="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400"
               maxLength={6}
             />
@@ -443,7 +495,7 @@ export default function AuthForm({ isLogin = true, onToggle, onSuccess }) {
                   Verifying...
                 </>
               ) : (
-                'Verify'
+                "Verify"
               )}
             </button>
           </div>
@@ -454,10 +506,13 @@ export default function AuthForm({ isLogin = true, onToggle, onSuccess }) {
       )}
 
       {/* Password */}
-      {((!isLogin && isEmailVerified) || (isLogin && signinMethod === 'username')) && (
+      {((!isLogin && isEmailVerified) ||
+        (isLogin && signinMethod === "username")) && (
         <div className="mb-4">
           <div className="flex justify-between mb-2">
-            <label className="text-sm font-medium text-gray-700">Password</label>
+            <label className="text-sm font-medium text-gray-700">
+              Password
+            </label>
             {/* Forgot password removed as requested */}
           </div>
           <div className="relative">
@@ -479,7 +534,11 @@ export default function AuthForm({ isLogin = true, onToggle, onSuccess }) {
           {!isLogin && password && (
             <div className="mt-2">
               <div className="flex text-xs gap-4">
-                <span className={password.length >= 6 ? "text-green-600" : "text-gray-400"}>
+                <span
+                  className={
+                    password.length >= 6 ? "text-green-600" : "text-gray-400"
+                  }
+                >
                   ✓ At least 6 characters
                 </span>
               </div>
@@ -489,14 +548,17 @@ export default function AuthForm({ isLogin = true, onToggle, onSuccess }) {
       )}
 
       {/* Submit Button */}
-      {((!isLogin) || (isLogin && signinMethod && (signinMethod === 'username' || signinOtpVerified))) && (
-        <button 
+      {(!isLogin ||
+        (isLogin &&
+          signinMethod &&
+          (signinMethod === "username" || signinOtpVerified))) && (
+        <button
           disabled={isLogin ? !isSigninEnabled : !isSignupEnabled}
           onClick={isLogin ? handleLoginWithPassword : handleSignup}
           className={`w-full py-2 rounded-lg transition ${
             (isLogin ? isSigninEnabled : isSignupEnabled)
-              ? 'bg-gradient-to-b from-gray-900 to-gray-700 text-white hover:opacity-90' 
-              : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              ? "bg-gradient-to-b from-gray-900 to-gray-700 text-white hover:opacity-90"
+              : "bg-gray-300 text-gray-500 cursor-not-allowed"
           }`}
         >
           {isLogin ? "Sign in" : "Sign up"}
@@ -523,7 +585,10 @@ export default function AuthForm({ isLogin = true, onToggle, onSuccess }) {
 
       <p className="text-center mt-4 text-sm text-gray-600">
         {isLogin ? "Don't have an account?" : "Already have an account?"}{" "}
-        <button onClick={onToggle} className="text-gray-700 hover:text-gray-900 font-medium hover:underline">
+        <button
+          onClick={onToggle}
+          className="text-gray-700 hover:text-gray-900 font-medium hover:underline"
+        >
           {isLogin ? "Sign up" : "Sign in"}
         </button>
       </p>
