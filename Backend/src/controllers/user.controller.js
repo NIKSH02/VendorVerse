@@ -12,41 +12,19 @@ const {
 const { sendSignupOTP, sendSigninOTPEmail } = require("../utils/emailService");
 
 const registerUser = asynchandler(async (req, res) => {
-  const { username, email, password, fullname, name, phone, address } =
-    req.body;
+  const { username, email, password, name, fullname, phone } = req.body;
   console.log("Registration request:", {
     username,
     email,
     password: password ? "PROVIDED" : "MISSING",
-    fullname,
     name,
+    fullname,
     phone,
-    address,
   });
 
-  // Simple validation - exactly what frontend sends
+  // Simple validation - only require username, email, and password
   if (!username || !email || !password) {
     throw new apiError(400, "Please provide username, email, and password");
-  }
-
-  // Validate required fields for complete registration
-  if (!name) {
-    throw new apiError(400, "Name is required");
-  }
-  if (!phone) {
-    throw new apiError(400, "Phone number is required");
-  }
-  if (
-    !address ||
-    !address.street ||
-    !address.city ||
-    !address.state ||
-    !address.pincode
-  ) {
-    throw new apiError(
-      400,
-      "Complete address (street, city, state, pincode) is required"
-    );
   }
 
   try {
@@ -59,104 +37,57 @@ const registerUser = asynchandler(async (req, res) => {
             email: existedUser.email,
             username: existedUser.username,
             isEmailVerified: existedUser.isEmailVerified,
-            hasRealPassword:
-              existedUser.password &&
-              !existedUser.password.startsWith("temp_password_"),
-            hasRealUsername: !existedUser.username.startsWith("temp_"),
-            isFullyRegistered:
-              existedUser.isEmailVerified &&
-              existedUser.password &&
-              !existedUser.password.startsWith("temp_password_") &&
-              !existedUser.username.startsWith("temp_"),
           }
         : "NO_USER_FOUND"
     );
 
     if (existedUser) {
-      // Check if user is fully registered (has real password AND real username, not temp)
-      const isFullyRegistered =
-        existedUser.isEmailVerified &&
-        existedUser.password &&
-        !existedUser.password.startsWith("temp_password_") &&
-        !existedUser.username.startsWith("temp_");
-
-      if (isFullyRegistered) {
-        // User is completely registered
-        throw new apiError(409, "User with this email already exists");
-      } else if (existedUser.isEmailVerified) {
-        // Email is verified but user hasn't completed registration (still has temp username or password)
-
-        // Check if someone else is using this username (exclude current user only)
-        const usernameConflict = await User.findOne({
-          username: username.toLowerCase(),
-          email: { $ne: email },
-          isEmailVerified: true,
-          password: { $not: /^temp_password_/ },
-        });
-
-        console.log("Username conflict check:", {
-          searchingFor: username.toLowerCase(),
-          excludeEmail: email,
-          foundConflict: !!usernameConflict,
-        });
-
-        if (usernameConflict) {
-          throw new apiError(409, "Username is already taken by another user");
-        }
-
-        // Check if someone else is using this phone number
-        const phoneConflict = await User.findOne({
-          phone: phone,
-          email: { $ne: email },
-          isEmailVerified: true,
-          password: { $not: /^temp_password_/ },
-        });
-
-        if (phoneConflict) {
-          throw new apiError(
-            409,
-            "Phone number is already registered to another user"
-          );
-        }
-
-        console.log("Completing registration for verified user");
-        existedUser.name = name;
-        existedUser.username = username.toLowerCase();
-        existedUser.fullname = fullname || name;
-        existedUser.phone = phone;
-        existedUser.password = password; // Will be hashed by pre-save middleware
-        existedUser.address = {
-          street: address.street,
-          city: address.city,
-          state: address.state,
-          pincode: address.pincode,
-          geolocation: {
-            lat: address.geolocation?.lat || 0.0,
-            lng: address.geolocation?.lng || 0.0,
-          },
-        };
-        existedUser.avatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(fullname || name)}&background=6366f1&color=ffffff&size=200`;
-
-        await existedUser.save();
-
-        // Return user without password
-        const updatedUser = await User.findById(existedUser._id).select(
-          "-password -refresh_token"
-        );
-
-        return res
-          .status(201)
-          .json(
-            new ApiResponse(201, "User registered successfully", updatedUser)
-          );
-      } else {
-        // Email not verified yet
-        throw new apiError(400, "Please verify your email first");
-      }
+      // User already exists
+      throw new apiError(409, "User with this email already exists");
     }
 
-    // No existing user found, this shouldn't happen in normal flow
-    throw new apiError(400, "Please verify your email first");
+    // Check if username is already taken
+    const usernameExists = await User.findOne({
+      username: username.toLowerCase(),
+    });
+
+    if (usernameExists) {
+      throw new apiError(409, "Username is already taken");
+    }
+
+    // Set default address values (will be completed in profile later)
+    const userAddress = {
+      street: "To be updated",
+      city: "To be updated",
+      state: "To be updated",
+      pincode: "000000",
+      geolocation: {
+        lat: 0.0,
+        lng: 0.0,
+      },
+    };
+
+    // Create new user with provided information
+    const newUser = await User.create({
+      username: username.toLowerCase(),
+      email,
+      password, // Will be hashed by pre-save middleware
+      name: name || username, // Use provided name or username as default
+      fullname: fullname || username, // Use provided fullname or username as default
+      phone: phone || `temp_${Date.now()}`, // Use provided phone or temporary
+      address: userAddress,
+      avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=6366f1&color=ffffff&size=200`,
+      isEmailVerified: false, // Will be verified separately if needed
+    });
+
+    // Return user without password
+    const createdUser = await User.findById(newUser._id).select(
+      "-password -refresh_token"
+    );
+
+    return res
+      .status(201)
+      .json(new ApiResponse(201, "User registered successfully", createdUser));
   } catch (error) {
     console.error("Registration error:", error);
 

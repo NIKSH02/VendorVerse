@@ -122,7 +122,7 @@ function Navbar({ theme, setTheme }) {
           </Link>
 
           {/* Profile Link */}
-          <Link to="/profile" className="flex items-center gap-2 text-gray-600 dark:text-gray-300 hover:text-orange-500 dark:hover:text-orange-400 font-medium transition-colors px-4 py-3 md:p-0 hover:bg-gray-50 dark:hover:bg-gray-800 md:hover:bg-transparent rounded-lg">
+          <Link to="/Profile" className="flex items-center gap-2 text-gray-600 dark:text-gray-300 hover:text-orange-500 dark:hover:text-orange-400 font-medium transition-colors px-4 py-3 md:p-0 hover:bg-gray-50 dark:hover:bg-gray-800 md:hover:bg-transparent rounded-lg">
             <FaUserCircle className="text-2xl" /> <span data-translate="true">Profile</span>
           </Link>
 

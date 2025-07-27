@@ -13,11 +13,11 @@ const SupplierListingSchema = new mongoose.Schema({
     },
     imageUrl: {
         type: String,
-        required: true
+        
     },
     imageUrls: [{
         type: String,
-        required: true
+        
     }],
     imageDetails: [{
         url: { type: String, required: true },
