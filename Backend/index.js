@@ -176,7 +176,7 @@ process.on('unhandledRejection', (reason, promise) => {
   process.exit(1);
 });
 
-const PORT =  5001;
+const PORT =  5000;
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });

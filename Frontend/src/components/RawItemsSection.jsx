@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import apiClient from '../api/axios';
 
 const categories = ['All Items', 'vegetables', 'spices', 'grains', 'fruits', 'dairy'];
 
 function RawItemsSection() {
+  const navigate = useNavigate();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -167,10 +169,7 @@ function RawItemsSection() {
                       e.target.src = '/placeholder-product.jpg';
                     }}
                   />
-                  {/* Quantity Available Badge */}
-                  <div className="absolute bottom-4 left-4 z-20 bg-black/70 backdrop-blur-sm px-3 py-1 rounded-full">
-                    <span className="text-white text-xs">Available: {product.quantityAvailable} {product.unit}</span>
-                  </div>
+                  {/* Quantity Available Badge removed */}
                 </div>
 
                 {/* Content Container */}
@@ -190,23 +189,18 @@ function RawItemsSection() {
                     </div>
                   )}
 
-                  {/* Action Buttons */}
+                  {/* Action Button: Place Order */}
                   <div className="flex gap-2">
-                    <button className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 px-2 rounded-lg transition-all duration-300 transform hover:scale-105 hover:shadow-lg text-xs">
-                      Quick Order
-                    </button>
-                    <button className="w-8 h-8 flex items-center justify-center bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-600 dark:text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                      </svg>
+                    <button
+                      className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 px-2 rounded-lg transition-all duration-300 transform hover:scale-105 hover:shadow-lg text-xs"
+                      onClick={() => navigate('/productdetail', { state: { item: product } })}
+                    >
+                      Place Order
                     </button>
                   </div>
                 </div>
 
-                {/* Stock Status Indicator */}
-                {product.isActive && product.quantityAvailable > 0 && (
-                  <div className="absolute -top-2 -right-2 w-4 h-4 rounded-full bg-green-400 dark:bg-green-500 ring-4 ring-white dark:ring-gray-900"></div>
-                )}
+                {/* Stock Status Indicator removed */}
               </div>
             ))}
           </div>

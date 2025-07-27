@@ -1,9 +1,9 @@
 import axios from 'axios';
 
 // Base URL for your backend API
-const BASE_URL = 'https://cc5wnhxq-5001.inc1.devtunnels.ms/api';
+const BASE_URL = 'http://localhost:5000/api';
 
-// Create axios instance
+// Create axios instance 
 const apiClient = axios.create({
     baseURL: BASE_URL,
     timeout: 10000, // 10 seconds timeout

@@ -13,8 +13,8 @@ import {
 import LandingPage from "./pages/LandingPage";
 import AllItemsPage from "./pages/AllItemsPage";
 import AboutPage from "./pages/AboutPage";
-import SpecialItemsPage from "./pages/SpecialItemsPage";
-import RawConnectDashboard from "./pages/RawConnectDashboard_fixed";
+// import SpecialItemsPage from "./pages/SpecialItemsPage";
+// import RawConnectDashboard from "./pages/RawConnectDashboard";
 import { useAuth } from "./hooks/useAuth";
 import PersonalChatUI from "./pages/PersonalChatUi";
 
@@ -97,22 +97,6 @@ const AppRoutes = () => {
           element={
             <ProtectedRoute>
               <AllItemsPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/special-items"
-          element={
-            <ProtectedRoute>
-              <SpecialItemsPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/Profile"
-          element={
-            <ProtectedRoute>
-              <RawConnectDashboard />
             </ProtectedRoute>
           }
         />

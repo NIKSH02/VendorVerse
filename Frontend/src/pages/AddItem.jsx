@@ -570,19 +570,78 @@ const AddNewListingModal = ({ isOpen, onClose }) => {
   );
 };
 
-// Demo component to show the modal
+// Demo component to show the modal and a sample card
+import { useNavigate } from 'react-router-dom';
+
 export default function App() {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const navigate = useNavigate();
+
+  // Example card data
+  const demoItem = {
+    id: 1,
+    name: 'Sample Product',
+    image: '/potato.jpg',
+    description: 'Premium quality potatoes perfect for all your cooking needs',
+    price: '₹25/kg',
+    // available: true, // removed
+    // quantityAvailable: 10, // removed
+    category: 'Vegetables'
+  };
 
   return (
-    <div className=" bg-gray-100 flex items-center justify-center">
-      <div className="text-center">
+    <div className="bg-gray-100 flex flex-col items-center justify-center min-h-screen py-8">
+      <div className="text-center mb-8">
         <button
           onClick={() => setIsModalOpen(true)}
           className="px-6 py-3 bg-orange-400 text-white rounded-lg hover:bg-orange-500 transition-colors font-medium"
         >
           + Add New Listing
         </button>
+      </div>
+
+      {/* Demo Card (matches AllItemsPage/RawItemsSection style) */}
+      <div className="group relative bg-gradient-to-br from-white to-gray-50 rounded-2xl shadow-lg hover:shadow-2xl transform hover:-translate-y-1 transition-all duration-300 w-full max-w-xs mb-8">
+        {/* Category Tag */}
+        <div className="absolute top-4 left-4 z-10">
+          <span className="px-3 py-1 rounded-full bg-orange-100 text-orange-600 text-xs font-semibold">
+            {demoItem.category}
+          </span>
+        </div>
+        {/* Floating Price Tag */}
+        <div className="absolute top-4 right-4 z-10">
+          <div className="bg-black text-white px-4 py-2 rounded-lg font-bold transform rotate-3 group-hover:rotate-0 transition-transform duration-300">
+            {demoItem.price}
+          </div>
+        </div>
+        {/* Image Container with Gradient Overlay */}
+        <div className="relative h-56 rounded-t-2xl overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent z-10"></div>
+          <img
+            src={demoItem.image}
+            alt={demoItem.name}
+            className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-500"
+          />
+        </div>
+        {/* Content Container */}
+        <div className="p-6">
+          <h3 className="text-xl font-bold text-gray-900 mb-2 group-hover:text-orange-500 transition-colors">
+            {demoItem.name}
+          </h3>
+          <p className="text-black text-sm leading-relaxed mb-6">
+            {demoItem.description}
+          </p>
+          {/* Action Button: Place Order */}
+          <div className="flex gap-3">
+            <button
+              className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3 px-4 rounded-xl transition-all duration-300 transform hover:scale-105 hover:shadow-lg"
+              onClick={() => navigate('/productdetail', { state: { item: demoItem } })}
+            >
+              Place Order
+            </button>
+          </div>
+        </div>
+        {/* Stock Status Indicator and available quantity removed */}
       </div>
 
       <AddNewListingModal 
