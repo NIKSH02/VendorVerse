@@ -149,7 +149,7 @@ const AddNewListingModal = ({ isOpen, onClose }) => {
       alert('Please provide both latitude and longitude for the pickup address.');
       return;
     }
-    // Prepare FormData for backend
+    // Prepare FormData for backend (use 'images' as the key for files)
     const form = new FormData();
     form.append('itemName', formData.itemName);
     form.append('description', formData.description);
@@ -163,6 +163,7 @@ const AddNewListingModal = ({ isOpen, onClose }) => {
     form.append('location[address]', formData.location.address);
     form.append('location[lat]', formData.location.lat);
     form.append('location[lng]', formData.location.lng);
+    // Use 'images' as the key for each file
     formData.imageUrl.forEach((file) => {
       form.append('images', file);
     });

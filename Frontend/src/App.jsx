@@ -6,6 +6,9 @@ import { FaProductHunt } from 'react-icons/fa';
 import ProductDetail from './pages/ProductDetail';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import LandingPage from './pages/LandingPage';
+import AllItemsPage from './pages/AllItemsPage';
+import AboutPage from './pages/AboutPage';
+import SpecialItemsPage from './pages/SpecialItemsPage';
 
 
 // Simple Error Boundary Component
@@ -54,7 +57,10 @@ function App() {
             <Route path="/authpage" element={ <AuthPage />} />
             <Route path="/Global" element={<CommunityRequests />  } />
             <Route path="/productdetail" element={<ProductDetail /> } />
-             <Route path="/" element={<LandingPage /> } />
+            <Route path="/all-items" element={<AllItemsPage />} />
+            <Route path="/special-items" element={<SpecialItemsPage />} />
+            <Route path="/about" element={<AboutPage />} />
+            <Route path="/" element={<LandingPage /> } />
           </Routes>
         </Router>
       </AuthProvider>
