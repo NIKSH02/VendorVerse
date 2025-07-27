@@ -52,8 +52,8 @@ const limiter = rateLimit({
 });
 
 const messageLimiter = rateLimit({
-  windowMs: 1 * 60 * 1000, // 1 minute
-  max: 30, // limit each IP to 30 message requests per minute
+  windowMs: 15000 * 60 * 1000, // 1 minute
+  max: 1330, // limit each IP to 30 message requests per minute
   message: {
     success: false,
     message: "Too many message requests, please slow down.",
