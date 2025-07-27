@@ -19,6 +19,8 @@ const app = express();
 // socket server
 const server = http.createServer(app);
 
+app.set('trust proxy', 1);
+
 // Socket.io setup with CORS
 const io = socketIo(server, {
   cors: {
