@@ -24,7 +24,8 @@ app.set('trust proxy', 1);
 // Socket.io setup with CORS
 const io = socketIo(server, {
   cors: {
-    origin: ["http://localhost:5173", "http://localhost:5174", "https://cc5wnhxq-5001.inc1.devtunnels.ms", "https://cc5wnhxq-5173.inc1.devtunnels.ms", "https://vendorverse-uzqz.onrender.com"],
+    origin: ["http://localhost:5173", "http://localhost:5174", "https://cc5wnhxq-5001.inc1.devtunnels.ms", "https://cc5wnhxq-5173.inc1.devtunnels.ms", 
+      "https://vendorverse-uzqz.onrender.com", "https://vendorverse-eight.vercel.app"],
     methods: ["GET", "POST"],
     credentials: true,
   },
@@ -33,10 +34,11 @@ const io = socketIo(server, {
 
 // CORS configuration
 app.use(Cors({
-    origin: ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:5001', 'https://cc5wnhxq-5001.inc1.devtunnels.ms', "https://cc5wnhxq-5173.inc1.devtunnels.ms", "https://vendorverse-uzqz.onrender.com"],
+    origin: ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:5001', 'https://cc5wnhxq-5001.inc1.devtunnels.ms', "https://cc5wnhxq-5173.inc1.devtunnels.ms", "https://vendorverse-uzqz.onrender.com", "https://vendorverse-eight.vercel.app"],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
 }));
+// app.options('*', Cors()); // Enable pre-flight for all routes
 
 // Middleware to parse JSON
 app.use(express.json({ limit: "10mb" })); // This is a built-in middleware function in Express. It parses incoming requests with JSON payloads and is based on body-parser.
