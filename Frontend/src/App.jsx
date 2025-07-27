@@ -12,7 +12,8 @@ import {
 import LandingPage from "./pages/LandingPage";
 import AllItemsPage from "./pages/AllItemsPage";
 import AboutPage from "./pages/AboutPage";
-import SpecialItemsPage from "./pages/SpecialItemsPage";
+import Creategroup from "./pages/Creategroup";
+
 import RawConnectDashboard from "./pages/RawConnectDashboard_fixed";
 import { useAuth } from "./hooks/useAuth";
 
@@ -84,6 +85,9 @@ function App() {
             <Route path="/authpage" element={<AuthPage />} />
             <Route path="global" element={<CommunityRequests />} />
             <Route path="/productdetail" element={<ProductDetail />} />
+               <Route path="/al-ite" element={<AllItemsPage />} />
+                 <Route path="/creategroup" element={<Creategroup />} />
+
             {/* Protected Routes - Authentication required */}
             <Route
               path="/Global"
@@ -101,22 +105,15 @@ function App() {
                 </ProtectedRoute>
               }
             />
-            <Route
+            {/* <Route
               path="/all-items"
               element={
                 <ProtectedRoute>
                   <AllItemsPage />
                 </ProtectedRoute>
               }
-            />
-            <Route
-              path="/special-items"
-              element={
-                <ProtectedRoute>
-                  <SpecialItemsPage />
-                </ProtectedRoute>
-              }
-            />
+            /> */}
+          
             <Route
               path="/Profile"
               element={

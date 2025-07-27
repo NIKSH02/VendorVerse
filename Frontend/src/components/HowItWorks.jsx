@@ -46,9 +46,9 @@ const steps = [
 
 function HowItWorks() {
   return (
-    <section className="relative py-20 bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-gray-800 overflow-hidden">
+    <section className="relative py-20 bg-gradient-to-b from-gray-50 to-white overflow-hidden">
       {/* Background Pattern */}
-      <div className="absolute inset-0 opacity-30 dark:opacity-10">
+      <div className="absolute inset-0 opacity-30">
         <div className="absolute inset-0">
           {[...Array(20)].map((_, i) => (
             <motion.div
@@ -85,10 +85,10 @@ function HowItWorks() {
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
         >
-          <h2 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
+          <h2 className="text-4xl font-bold text-gray-900 mb-4">
             How It <span className="text-orange-500">Works</span>
           </h2>
-          <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
             Simple steps to get your favorite products delivered to your doorstep
           </p>
         </motion.div>
@@ -112,7 +112,7 @@ function HowItWorks() {
               {/* Step Card */}
               <motion.div
                 whileHover={{ scale: 1.05 }}
-                className="relative bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-xl flex flex-col items-center justify-between min-h-[300px] h-full"
+                className="relative bg-white rounded-2xl p-6 shadow-xl flex flex-col items-center justify-between min-h-[300px] h-full"
                 style={{ minHeight: '300px', height: '100%' }}
               >
                 {/* Step Number */}
@@ -127,10 +127,10 @@ function HowItWorks() {
 
                 {/* Content */}
                 <div className="flex flex-col flex-1 items-center justify-center w-full text-center">
-                  <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+                  <h3 className="text-xl font-bold text-gray-900 mb-2">
                     {step.title}
                   </h3>
-                  <p className="text-gray-600 dark:text-gray-300">
+                  <p className="text-gray-600">
                     {step.description}
                   </p>
                 </div>

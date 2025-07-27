@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { addSupplierItem } from '../services/supplierService';
+import useAuth from '../hooks/useAuth';
 import { X, Upload, ArrowLeft, ArrowRight, Check } from 'lucide-react';
 
 const AddNewListingModal = ({ isOpen, onClose }) => {
@@ -82,8 +83,7 @@ const AddNewListingModal = ({ isOpen, onClose }) => {
       reader.onload = (event) => {
         const newPreview = {
           id: Date.now() + Math.random(),
-          url: event.target.result,
-          file: file
+          url: event.target.result
         };
         setImagePreviews(prev => [...prev, newPreview]);
         setFormData(prev => ({
@@ -96,10 +96,12 @@ const AddNewListingModal = ({ isOpen, onClose }) => {
   };
 
   const removeImage = (id) => {
-    setImagePreviews(prev => prev.filter(img => img.id !== id));
+    // Find the index in imagePreviews
+    const idx = imagePreviews.findIndex(img => img.id === id);
+    setImagePreviews(prev => prev.filter((img, i) => i !== idx));
     setFormData(prev => ({
       ...prev,
-      imageUrl: prev.imageUrl.filter((_, index) => index !== imagePreviews.findIndex(img => img.id === id))
+      imageUrl: prev.imageUrl.filter((_, i) => i !== idx)
     }));
   };
 
@@ -108,21 +110,14 @@ const AddNewListingModal = ({ isOpen, onClose }) => {
   };
 
   const isStep2Valid = () => {
-    // Must have at least 4 images
-    return (
-      formData.quantityAvailable &&
-      formData.unit &&
-      formData.pricePerUnit &&
-      formData.imageUrl.length >= 4
-    );
+    return formData.quantityAvailable && formData.unit && formData.pricePerUnit;
   };
 
   const isStep3Valid = () => {
-    // Require address, lat, lng
     return (
       formData.location.address.trim() &&
-      formData.location.lat &&
-      formData.location.lng
+      formData.location.lat !== '' &&
+      formData.location.lng !== ''
     );
   };
 
@@ -138,38 +133,57 @@ const AddNewListingModal = ({ isOpen, onClose }) => {
     }
   };
 
+  const [loading, setLoading] = useState(false);
+  const { user } = useAuth();
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    // Validation for images and location
-    if (formData.imageUrl.length < 4) {
+    // Extra validation for all required fields
+    if (
+      !formData.itemName.trim() ||
+      !formData.category ||
+      !formData.type ||
+      !formData.unit ||
+      !formData.quantityAvailable || isNaN(Number(formData.quantityAvailable)) || Number(formData.quantityAvailable) <= 0 ||
+      !formData.pricePerUnit || isNaN(Number(formData.pricePerUnit)) || Number(formData.pricePerUnit) < 0 ||
+      !formData.location.address.trim() ||
+      formData.location.lat === '' || isNaN(Number(formData.location.lat)) ||
+      formData.location.lng === '' || isNaN(Number(formData.location.lng))
+    ) {
+      alert('Please fill all required fields with valid values.');
+      return;
+    }
+    if (imagePreviews.length < 4) {
       alert('Please upload at least 4 images.');
       return;
     }
-    if (!formData.location.lat || !formData.location.lng) {
-      alert('Please provide both latitude and longitude for the pickup address.');
-      return;
-    }
-    // Prepare FormData for backend (use 'images' as the key for files)
-    const form = new FormData();
-    form.append('itemName', formData.itemName);
-    form.append('description', formData.description);
-    form.append('category', formData.category);
-    form.append('type', formData.type);
-    form.append('quantityAvailable', formData.quantityAvailable);
-    form.append('unit', formData.unit);
-    form.append('pricePerUnit', formData.pricePerUnit);
-    form.append('deliveryAvailable', formData.deliveryAvailable);
-    form.append('deliveryFee', formData.deliveryFee);
-    form.append('location[address]', formData.location.address);
-    form.append('location[lat]', formData.location.lat);
-    form.append('location[lng]', formData.location.lng);
-    // Use 'images' as the key for each file
-    formData.imageUrl.forEach((file) => {
-      form.append('images', file);
-    });
+    setLoading(true);
     try {
-      const res = await addSupplierItem(form);
-      alert('Listing added successfully!\n' + JSON.stringify(res, null, 2));
+      const data = new FormData();
+      data.append('itemName', formData.itemName);
+      data.append('description', formData.description);
+      data.append('category', formData.category);
+      data.append('type', formData.type);
+      data.append('quantityAvailable', Number(formData.quantityAvailable));
+      data.append('unit', formData.unit);
+      data.append('pricePerUnit', Number(formData.pricePerUnit));
+      data.append('deliveryAvailable', formData.deliveryAvailable ? 'true' : 'false');
+      data.append('deliveryFee', Number(formData.deliveryFee) || 0);
+      // Add location as JSON string (backend expects object)
+      data.append('location', JSON.stringify({
+        address: formData.location.address,
+        lat: Number(formData.location.lat),
+        lng: Number(formData.location.lng)
+      }));
+      // Append images as 'images'
+      formData.imageUrl.forEach((file) => {
+        if (file instanceof File) {
+          data.append('images', file);
+        }
+      });
+      // Call backend
+      await addSupplierItem(data);
+      alert('Listing added successfully!');
       onClose();
       // Reset form
       setCurrentStep(1);
@@ -192,14 +206,18 @@ const AddNewListingModal = ({ isOpen, onClose }) => {
       });
       setImagePreviews([]);
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to add item');
+      alert(
+        err?.response?.data?.message || 'Failed to add listing. Please try again.'
+      );
+    } finally {
+      setLoading(false);
     }
   };
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-opacity-20 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg shadow-xl w-full max-w-xl max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
@@ -241,146 +259,69 @@ const AddNewListingModal = ({ isOpen, onClose }) => {
           <div className="px-6 pb-6">
             {/* Step 1: Basic Product Info */}
             {currentStep === 1 && (
-              <div className="space-y-6 animate-in slide-in-from-right-4 duration-300">
-                {/* Hero Section with Icon */}
-                <div className="text-center bg-gradient-to-br from-orange-50 to-amber-50 rounded-xl p-6 border border-orange-100">
-                  <div className="w-16 h-16 bg-orange-400 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                    </svg>
-                  </div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2">Tell us about your product</h3>
-                  <p className="text-gray-600 text-sm">Help buyers discover your listing with detailed information</p>
-                </div>
-
-                {/* Product Name with Icon */}
+              <div className="space-y-4 animate-in slide-in-from-right-4 duration-300">
+                <h3 className="text-lg font-medium text-gray-900 mb-4">Basic Product Information</h3>
+                
                 <div>
-                  <label className="flex items-center text-sm font-medium text-gray-700 mb-3">
-                    <svg className="w-4 h-4 mr-2 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.99 1.99 0 013 12V7a4 4 0 014-4z" />
-                    </svg>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     Product Name *
                   </label>
                   <input
                     type="text"
                     value={formData.itemName}
                     onChange={(e) => handleInputChange('itemName', e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-400 focus:border-transparent transition-all duration-200 shadow-sm hover:shadow-md"
-                    placeholder="e.g., Fresh Organic Tomatoes"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-400 focus:border-transparent"
+                    placeholder="Enter product name"
                     required
                   />
-                  {formData.itemName && (
-                    <div className="mt-2 flex items-center text-green-600 text-sm">
-                      <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                      </svg>
-                      Good! Name looks great
-                    </div>
-                  )}
                 </div>
 
-                {/* Description with Icon */}
                 <div>
-                  <label className="flex items-center text-sm font-medium text-gray-700 mb-3">
-                    <svg className="w-4 h-4 mr-2 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     Description
-                    <span className="ml-2 text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">Optional</span>
                   </label>
                   <textarea
                     value={formData.description}
                     onChange={(e) => handleInputChange('description', e.target.value)}
                     rows={3}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-400 focus:border-transparent transition-all duration-200 shadow-sm hover:shadow-md resize-none"
-                    placeholder="Tell buyers about quality, origin, freshness, or special features..."
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-400 focus:border-transparent"
+                    placeholder="Describe your product..."
                   />
-                  <div className="mt-1 text-xs text-gray-500 flex justify-between">
-                    <span>💡 Tip: Mention quality, freshness, or special features</span>
-                    <span>{formData.description.length}/500</span>
-                  </div>
                 </div>
 
-                {/* Category and Type Selection */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="flex items-center text-sm font-medium text-gray-700 mb-3">
-                      <svg className="w-4 h-4 mr-2 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                      </svg>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
                       Category *
                     </label>
                     <select
                       value={formData.category}
                       onChange={(e) => handleInputChange('category', e.target.value)}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-400 focus:border-transparent transition-all duration-200 shadow-sm hover:shadow-md appearance-none bg-white"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-400 focus:border-transparent"
                       required
                     >
-                      <option value="">Choose category</option>
+                      <option value="">Select category</option>
                       {categories.map(cat => (
-                        <option key={cat.value} value={cat.value}>
-                          {cat.label === 'Vegetables' ? '🥬 ' : 
-                           cat.label === 'Fruits' ? '🍎 ' :
-                           cat.label === 'Spices' ? '🌶️ ' :
-                           cat.label === 'Dairy' ? '🥛 ' :
-                           cat.label === 'Grains' ? '🌾 ' :
-                           cat.label === 'Meat' ? '🥩 ' : '📦 '}
-                          {cat.label}
-                        </option>
+                        <option key={cat.value} value={cat.value}>{cat.label}</option>
                       ))}
                     </select>
-                    {formData.category && (
-                      <div className="mt-2 text-xs text-gray-600 bg-orange-50 px-3 py-2 rounded-lg">
-                        ✨ Great choice! {categories.find(c => c.value === formData.category)?.label} is popular
-                      </div>
-                    )}
                   </div>
 
                   <div>
-                    <label className="flex items-center text-sm font-medium text-gray-700 mb-3">
-                      <svg className="w-4 h-4 mr-2 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                      </svg>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
                       Product Type *
                     </label>
                     <select
                       value={formData.type}
                       onChange={(e) => handleInputChange('type', e.target.value)}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-400 focus:border-transparent transition-all duration-200 shadow-sm hover:shadow-md appearance-none bg-white"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-400 focus:border-transparent"
                       required
                     >
                       <option value="">Select type</option>
                       {types.map(type => (
-                        <option key={type.value} value={type.value}>
-                          {type.label === 'Raw' ? '🌱 ' : 
-                           type.label === 'Half-baked' ? '⚡ ' : '✅ '}
-                          {type.label}
-                        </option>
+                        <option key={type.value} value={type.value}>{type.label}</option>
                       ))}
                     </select>
-                    {formData.type && (
-                      <div className="mt-2 text-xs text-gray-600">
-                        {formData.type === 'raw' && '🌱 Perfect for cooking from scratch'}
-                        {formData.type === 'half-baked' && '⚡ Quick preparation needed'}
-                        {formData.type === 'complete' && '✅ Ready to use immediately'}
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Progress Indicator */}
-                <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-600">Progress</span>
-                    <span className="text-orange-600 font-medium">
-                      {isStep1Valid() ? 'Complete ✅' : `${Object.values({itemName: formData.itemName, category: formData.category, type: formData.type}).filter(v => v).length}/3 fields`}
-                    </span>
-                  </div>
-                  <div className="mt-2 bg-gray-200 rounded-full h-2">
-                    <div 
-                      className="bg-orange-400 h-2 rounded-full transition-all duration-300"
-                      style={{width: `${(Object.values({itemName: formData.itemName, category: formData.category, type: formData.type}).filter(v => v).length / 3) * 100}%`}}
-                    />
                   </div>
                 </div>
               </div>
@@ -550,7 +491,7 @@ const AddNewListingModal = ({ isOpen, onClose }) => {
                       value={formData.location.lat}
                       onChange={(e) => handleInputChange('location.lat', e.target.value)}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-400 focus:border-transparent"
-                      placeholder="Latitude"
+                      placeholder="Enter latitude"
                       required
                       step="any"
                     />
@@ -564,7 +505,7 @@ const AddNewListingModal = ({ isOpen, onClose }) => {
                       value={formData.location.lng}
                       onChange={(e) => handleInputChange('location.lng', e.target.value)}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-400 focus:border-transparent"
-                      placeholder="Longitude"
+                      placeholder="Enter longitude"
                       required
                       step="any"
                     />
@@ -612,14 +553,14 @@ const AddNewListingModal = ({ isOpen, onClose }) => {
                   <ArrowRight size={16} />
                 </button>
               ) : (
-                <button
-                  type="submit"
-                  onClick={handleSubmit}
-                  disabled={!isStep3Valid()}
-                  className="px-6 py-2 bg-orange-400 text-white rounded-lg hover:bg-orange-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  Submit Listing
-                </button>
+                  <button
+                    type="submit"
+                    onClick={handleSubmit}
+                    disabled={!isStep3Valid() || loading}
+                    className="px-6 py-2 bg-orange-400 text-white rounded-lg hover:bg-orange-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    {loading ? 'Submitting...' : 'Submit Listing'}
+                  </button>
               )}
             </div>
           </div>
@@ -634,12 +575,11 @@ export default function App() {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   return (
-    <div className="bg-gray-100 flex items-center justify-center">
+    <div className=" bg-gray-100 flex items-center justify-center">
       <div className="text-center">
-
         <button
           onClick={() => setIsModalOpen(true)}
-          className="px-6 py-3 bg-orange-400 text-white hover:text-orange-400 rounded-lg hover:bg-white transition-colors font-medium"
+          className="px-6 py-3 bg-orange-400 text-white rounded-lg hover:bg-orange-500 transition-colors font-medium"
         >
           + Add New Listing
         </button>

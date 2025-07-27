@@ -143,13 +143,8 @@ export default function AuthForm({ isLogin = true, onToggle, onSuccess }) {
     if (username && password.length >= 1) {
       try {
         await loginWithPassword(username, password);
-        // Login successful - show success message with redirect callback
-        onSuccess?.(
-          "login",
-          "🚀 Welcome Back!",
-          `Great to see you again, ${username}! You have successfully logged into your account.`,
-          () => navigate('/Profile') // Redirect to profile after timeout
-        );
+        // Login successful - redirect directly to landing page
+        navigate('/');
       } catch (error) {
         console.error("Login failed:", error);
       }
@@ -368,16 +363,16 @@ export default function AuthForm({ isLogin = true, onToggle, onSuccess }) {
         {isLogin ? "Sign in" : "Sign up"}
       </button>
 
-		<p className="text-center mt-4 text-sm text-gray-600">
-		{isLogin ? "Don't have an account?" : "Already have an account?"}{" "}
-		<button
-			onClick={handleToggleAuth}
-			className="text-orange-600 hover:text-orange-800 font-medium hover:underline disabled:text-gray-400 disabled:cursor-not-allowed"
-			disabled={isVerifyingOtp || (registrationInProgress && emailVerificationSent && !isEmailVerified)}
-		>
-			{isLogin ? "Sign up" : "Sign in"}
-		</button>
-		</p>
+    <p className="text-center mt-4 text-sm text-gray-600">
+    {isLogin ? "Don't have an account?" : "Already have an account?"}{" "}
+    <button
+      onClick={handleToggleAuth}
+      className="text-orange-600 hover:text-orange-800 font-medium hover:underline disabled:text-gray-400 disabled:cursor-not-allowed"
+      disabled={isVerifyingOtp || (registrationInProgress && emailVerificationSent && !isEmailVerified)}
+    >
+      {isLogin ? "Sign up" : "Sign in"}
+    </button>
+    </p>
     </div>
   );
 }

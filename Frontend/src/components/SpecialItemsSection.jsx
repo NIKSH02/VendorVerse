@@ -35,14 +35,14 @@ const specialItems = [
 
 function SpecialItemsSection() {
   return (
-    <section className="py-16  to-white dark:from-gray-900 dark:to-gray-800">
+    <section className="py-16 bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
         <div className="text-center mb-12">
-          <h2 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
+          <h2 className="text-4xl font-bold text-gray-900 mb-4">
             Special <span className="text-orange-500">Preparations</span>
           </h2>
-          <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
             Discover our handcrafted delicacies and special preparations made with love and tradition
           </p>
         </div>
@@ -52,18 +52,18 @@ function SpecialItemsSection() {
           {specialItems.map((item) => (
             <div
               key={item.id}
-              className="group relative bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-xl shadow-md hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 min-h-[320px]"
+              className="group relative bg-gradient-to-br from-white to-gray-50 rounded-xl shadow-md hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 min-h-[320px]"
             >
               {/* Category Tag (use first tag as category) */}
               <div className="absolute top-4 left-4 z-10">
-                <span className="px-3 py-1 rounded-full bg-orange-100 dark:bg-orange-900 text-orange-600 dark:text-orange-300 text-xs font-semibold">
+                <span className="px-3 py-1 rounded-full bg-orange-100 text-orange-600 text-xs font-semibold">
                   {item.tags[0]}
                 </span>
               </div>
 
               {/* Floating Price Tag */}
               <div className="absolute top-4 right-4 z-10">
-                <div className="bg-black dark:bg-white text-white dark:text-black px-4 py-2 rounded-lg font-bold transform rotate-3 group-hover:rotate-0 transition-transform duration-300">
+                <div className="bg-black text-white px-4 py-2 rounded-lg font-bold transform rotate-3 group-hover:rotate-0 transition-transform duration-300">
                   {item.price}
                 </div>
               </div>
@@ -84,10 +84,10 @@ function SpecialItemsSection() {
 
               {/* Content Container */}
               <div className="p-4">
-                <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2 group-hover:text-orange-500 transition-colors">
+                <h3 className="text-lg font-bold text-gray-900 mb-2 group-hover:text-orange-500 transition-colors">
                   {item.title}
                 </h3>
-                <p className="text-gray-600 dark:text-gray-300 text-xs leading-relaxed mb-4">
+                <p className="text-gray-600 text-xs leading-relaxed mb-4">
                   {item.description}
                 </p>
 
@@ -96,8 +96,8 @@ function SpecialItemsSection() {
                   <button className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 px-2 rounded-lg transition-all duration-300 transform hover:scale-105 hover:shadow-lg text-xs">
                     Order Now
                   </button>
-                  <button className="w-8 h-8 flex items-center justify-center bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-600 dark:text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <button className="w-8 h-8 flex items-center justify-center bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                     </svg>
                   </button>
@@ -110,7 +110,7 @@ function SpecialItemsSection() {
         {/* Explore All Special Items Button */}
         <div className="mt-16 text-center">
           <button
-            onClick={() => window.location.href = '/all-items?sort=special'}
+            onClick={() => window.location.href = '/al-ite'}
             className="inline-flex items-center gap-2 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-8 py-4 rounded-xl text-lg font-semibold shadow-lg hover:shadow-2xl transform hover:scale-105 transition-all duration-300"
           >
             Explore All Special Items
