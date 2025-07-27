@@ -11,6 +11,7 @@ const locationChatSocket = (io) => {
 
     // Handle user joining a location-based chat room
     socket.on('joinLocation', (data) => {
+      
       try {
         let { userId, userName, location } = data;
         if (!userId || !userName || !location) {
