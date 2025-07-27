@@ -22,7 +22,7 @@ const server = http.createServer(app);
 // Socket.io setup with CORS
 const io = socketIo(server, {
   cors: {
-    origin: ["http://localhost:5173", "http://localhost:5174", "https://cc5wnhxq-5001.inc1.devtunnels.ms", "https://cc5wnhxq-5173.inc1.devtunnels.ms"],
+    origin: ["http://localhost:5173", "http://localhost:5174", "https://cc5wnhxq-5001.inc1.devtunnels.ms", "https://cc5wnhxq-5173.inc1.devtunnels.ms", "https://vendorverse-uzqz.onrender.com"],
     methods: ["GET", "POST"],
     credentials: true,
   },
@@ -31,7 +31,7 @@ const io = socketIo(server, {
 
 // CORS configuration
 app.use(Cors({
-    origin: ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:5001', 'https://cc5wnhxq-5001.inc1.devtunnels.ms', "https://cc5wnhxq-5173.inc1.devtunnels.ms"],
+    origin: ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:5001', 'https://cc5wnhxq-5001.inc1.devtunnels.ms', "https://cc5wnhxq-5173.inc1.devtunnels.ms", "https://vendorverse-uzqz.onrender.com"],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
 }));
