@@ -1,7 +1,7 @@
 import axios from "axios";
 
 // Base URL for your backend API
-const BASE_URL = 'https://cc5wnhxq-5001.inc1.devtunnels.ms/api';
+const BASE_URL = 'https://vendorverse-uzqz.onrender.com/api';
 
 // Create axios instance
 const apiClient = axios.create({

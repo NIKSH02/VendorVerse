@@ -1,7 +1,7 @@
 // API Endpoints Configuration
 export const API_ENDPOINTS = {
     // Base URLs
-    BASE_URL: 'https://cc5wnhxq-5001.inc1.devtunnels.ms/api/v1',
+    BASE_URL: 'https://vendorverse-uzqz.onrender.com/api/v1',
     
     // Auth endpoints
     AUTH: {
