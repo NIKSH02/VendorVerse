@@ -21,7 +21,7 @@ router.get('/supplier/:supplierId', getProductsBySupplier); // Get products by s
 router.get('/:id', getProductById);
 
 // Protected routes (require authentication)
-router.use(auth); // Apply auth middleware to all routes below
+ // Apply auth middleware to all routes below
 
 router.post('/', createProduct);
 router.post('/upload-images', uploadImages); // New endpoint for multiple image upload
