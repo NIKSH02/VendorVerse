@@ -1,38 +1,42 @@
-import { FaCog, FaTools, FaThumbsUp, FaMagic } from "react-icons/fa";
+import { FaHandshake, FaBoxOpen, FaMapMarkerAlt, FaShieldAlt } from "react-icons/fa";
 
 const features = [
   {
-    icon: <FaCog size={22} className="text-gray-600" />,
-    title: "Adaptable performance",
+    icon: <FaHandshake size={22} className="text-orange-600" />,
+    title: "Direct Vendor Connect",
     description:
-      "Our product effortlessly adjusts to your needs, boosting efficiency and simplifying your tasks.",
+      "Connect directly with verified suppliers and vendors. Build lasting business relationships with transparent communication and reliable partnerships.",
   },
   {
-    icon: <FaTools size={22} className="text-gray-600" />,
-    title: "Built to last",
+    icon: <FaBoxOpen size={22} className="text-orange-600" />,
+    title: "Sample Before Purchase",
     description:
-      "Experience unmatched durability that goes above and beyond with lasting investment.",
+      "Request samples from suppliers before making bulk orders. Ensure quality and compatibility with your requirements risk-free.",
   },
   {
-    icon: <FaThumbsUp size={22} className="text-gray-600" />,
-    title: "Great user experience",
+    icon: <FaMapMarkerAlt size={22} className="text-orange-600" />,
+    title: "Local & Global Reach",
     description:
-      "Integrate our product into your routine with an intuitive and easy-to-use interface.",
+      "Find suppliers near you or expand globally. Location-based search helps you discover the best vendors in your area or worldwide.",
   },
   {
-    icon: <FaMagic size={22} className="text-gray-600" />,
-    title: "Innovative functionality",
+    icon: <FaShieldAlt size={22} className="text-orange-600" />,
+    title: "Secure Transactions",
     description:
-      "Stay ahead with features that set new standards, addressing your evolving needs better than the rest.",
+      "Trade with confidence using our secure platform. Verified vendors, transparent pricing, and protected transactions ensure your business safety.",
   },
 ];
 
 export default function FeatureList() {
   return (
-    <div className="flex flex-col gap-6 max-w-md">
+    <div className="flex flex-col gap-6 max-w-md w-full">
+      <div className="md:hidden text-center mb-4">
+        <h3 className="text-xl font-semibold text-gray-800 mb-2">Why Choose VendorVerse?</h3>
+        <p className="text-sm text-gray-600">Discover the benefits of our platform</p>
+      </div>
       {features.map((item, index) => (
         <div key={index} className="flex gap-4 items-start">
-          <div>{item.icon}</div>
+          <div className="flex-shrink-0">{item.icon}</div>
           <div>
             <h4 className="font-semibold text-gray-800">{item.title}</h4>
             <p className="text-sm text-gray-600">{item.description}</p>

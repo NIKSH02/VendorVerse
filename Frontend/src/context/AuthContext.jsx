@@ -14,10 +14,6 @@ const AUTH_ACTIONS = {
   SET_EMAIL_VERIFIED: "SET_EMAIL_VERIFIED",
   SET_EMAIL_VERIFICATION_SENT: "SET_EMAIL_VERIFICATION_SENT",
   SET_IS_VERIFYING_OTP: "SET_IS_VERIFYING_OTP",
-  SET_SIGNIN_METHOD: "SET_SIGNIN_METHOD",
-  SET_SIGNIN_OTP_SENT: "SET_SIGNIN_OTP_SENT",
-  SET_SIGNIN_OTP_VERIFIED: "SET_SIGNIN_OTP_VERIFIED",
-  SET_IS_VERIFYING_SIGNIN_OTP: "SET_IS_VERIFYING_SIGNIN_OTP",
 };
 
 // Initial state
@@ -29,10 +25,6 @@ const initialState = {
   isEmailVerified: false,
   emailVerificationSent: false,
   isVerifyingOtp: false,
-  signinMethod: null, // 'username' or 'email'
-  signinOtpSent: false,
-  signinOtpVerified: false,
-  isVerifyingSigninOtp: false,
 };
 
 // Auth Reducer
@@ -46,6 +38,10 @@ const authReducer = (state, action) => {
       };
 
     case AUTH_ACTIONS.SET_USER:
+      console.log("AuthContext: SET_USER action triggered", {
+        user: action.payload,
+        isAuthenticated: !!action.payload
+      });
       return {
         ...state,
         user: action.payload,
@@ -92,32 +88,6 @@ const authReducer = (state, action) => {
         isVerifyingOtp: action.payload,
       };
 
-    case AUTH_ACTIONS.SET_SIGNIN_METHOD:
-      return {
-        ...state,
-        signinMethod: action.payload,
-        signinOtpSent: false,
-        signinOtpVerified: false,
-      };
-
-    case AUTH_ACTIONS.SET_SIGNIN_OTP_SENT:
-      return {
-        ...state,
-        signinOtpSent: action.payload,
-      };
-
-    case AUTH_ACTIONS.SET_SIGNIN_OTP_VERIFIED:
-      return {
-        ...state,
-        signinOtpVerified: action.payload,
-      };
-
-    case AUTH_ACTIONS.SET_IS_VERIFYING_SIGNIN_OTP:
-      return {
-        ...state,
-        isVerifyingSigninOtp: action.payload,
-      };
-
     default:
       return state;
   }
@@ -141,6 +111,8 @@ export const AuthProvider = ({ children }) => {
         } catch {
           // Token might be invalid
           dispatch({ type: AUTH_ACTIONS.LOGOUT });
+        } finally {
+          dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: false });
         }
       }
     };
@@ -157,13 +129,14 @@ export const AuthProvider = ({ children }) => {
         type: AUTH_ACTIONS.SET_EMAIL_VERIFICATION_SENT,
         payload: true,
       });
-      dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: false });
       return response;
     } catch (error) {
       const errorMessage =
         error.response?.data?.message || "Failed to send verification OTP";
       dispatch({ type: AUTH_ACTIONS.SET_ERROR, payload: errorMessage });
       throw error;
+    } finally {
+      dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: false });
     }
   };
 
@@ -187,13 +160,14 @@ export const AuthProvider = ({ children }) => {
     try {
       dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: true });
       const response = await authAPI.resendVerificationOTP(email, username);
-      dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: false });
       return response;
     } catch (error) {
       const errorMessage =
         error.response?.data?.message || "Failed to resend OTP";
       dispatch({ type: AUTH_ACTIONS.SET_ERROR, payload: errorMessage });
       throw error;
+    } finally {
+      dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: false });
     }
   };
 
@@ -202,17 +176,29 @@ export const AuthProvider = ({ children }) => {
     try {
       dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: true });
       const response = await authAPI.register(userData);
-      dispatch({ type: AUTH_ACTIONS.SET_USER, payload: response.data });
+      
+      // Check if the response contains user and token data
+      if (response.data && response.data.user) {
+        dispatch({ type: AUTH_ACTIONS.SET_USER, payload: response.data.user });
 
-      // Save to localStorage
-      localStorage.setItem("accessToken", response.data.accessToken);
-      localStorage.setItem("user", JSON.stringify(response.data.user));
+        // Save to localStorage if tokens are provided
+        if (response.data.accessToken) {
+          localStorage.setItem("accessToken", response.data.accessToken);
+          localStorage.setItem("user", JSON.stringify(response.data.user));
+        }
+      } else {
+        // Fallback for older response format
+        dispatch({ type: AUTH_ACTIONS.SET_USER, payload: response.data });
+        localStorage.setItem("user", JSON.stringify(response.data));
+      }
 
+      dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: false });
       return response;
     } catch (error) {
       const errorMessage =
         error.response?.data?.message || "Registration failed";
       dispatch({ type: AUTH_ACTIONS.SET_ERROR, payload: errorMessage });
+      dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: false });
       throw error;
     }
   };
@@ -236,67 +222,8 @@ export const AuthProvider = ({ children }) => {
       const errorMessage = error.response?.data?.message || "Login failed";
       dispatch({ type: AUTH_ACTIONS.SET_ERROR, payload: errorMessage });
       throw error;
-    }
-  };
-
-  // Email OTP signin functions
-  const sendSigninOTP = async (email) => {
-    try {
-      dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: true });
-      const response = await authAPI.sendSigninOTP(email);
-      dispatch({ type: AUTH_ACTIONS.SET_SIGNIN_OTP_SENT, payload: true });
+    } finally {
       dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: false });
-      return response;
-    } catch (error) {
-      const errorMessage =
-        error.response?.data?.message || "Failed to send signin OTP";
-      dispatch({ type: AUTH_ACTIONS.SET_ERROR, payload: errorMessage });
-      throw error;
-    }
-  };
-
-  const verifySigninOTP = async (email, otp) => {
-    try {
-      dispatch({
-        type: AUTH_ACTIONS.SET_IS_VERIFYING_SIGNIN_OTP,
-        payload: true,
-      });
-      const response = await authAPI.verifySigninOTP(email, otp);
-      dispatch({ type: AUTH_ACTIONS.SET_USER, payload: response.data.user });
-      dispatch({ type: AUTH_ACTIONS.SET_SIGNIN_OTP_VERIFIED, payload: true });
-      dispatch({
-        type: AUTH_ACTIONS.SET_IS_VERIFYING_SIGNIN_OTP,
-        payload: false,
-      });
-
-      // Save to localStorage
-      localStorage.setItem("accessToken", response.data.accessToken);
-      localStorage.setItem("user", JSON.stringify(response.data.user));
-
-      return response;
-    } catch (error) {
-      dispatch({
-        type: AUTH_ACTIONS.SET_IS_VERIFYING_SIGNIN_OTP,
-        payload: false,
-      });
-      const errorMessage =
-        error.response?.data?.message || "Invalid or expired OTP";
-      dispatch({ type: AUTH_ACTIONS.SET_ERROR, payload: errorMessage });
-      throw error;
-    }
-  };
-
-  const resendSigninOTP = async (email) => {
-    try {
-      dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: true });
-      const response = await authAPI.resendSigninOTP(email);
-      dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: false });
-      return response;
-    } catch (error) {
-      const errorMessage =
-        error.response?.data?.message || "Failed to resend signin OTP";
-      dispatch({ type: AUTH_ACTIONS.SET_ERROR, payload: errorMessage });
-      throw error;
     }
   };
 
@@ -332,6 +259,8 @@ export const AuthProvider = ({ children }) => {
         error.response?.data?.message || "Failed to update account details";
       dispatch({ type: AUTH_ACTIONS.SET_ERROR, payload: errorMessage });
       throw error;
+    } finally {
+      dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: false });
     }
   };
 
@@ -340,23 +269,15 @@ export const AuthProvider = ({ children }) => {
     try {
       dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: true });
       const response = await authAPI.changePassword(oldPassword, newPassword);
-      dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: false });
       return response;
     } catch (error) {
       const errorMessage =
         error.response?.data?.message || "Failed to change password";
       dispatch({ type: AUTH_ACTIONS.SET_ERROR, payload: errorMessage });
       throw error;
+    } finally {
+      dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: false });
     }
-  };
-
-  // Set signin method
-  const setSigninMethod = (method) => {
-    dispatch({ type: AUTH_ACTIONS.SET_SIGNIN_METHOD, payload: method });
-  }; // Reset signin OTP states
-  const resetSigninOtpStates = () => {
-    dispatch({ type: AUTH_ACTIONS.SET_SIGNIN_OTP_SENT, payload: false });
-    dispatch({ type: AUTH_ACTIONS.SET_SIGNIN_OTP_VERIFIED, payload: false });
   };
 
   const value = {
@@ -366,15 +287,10 @@ export const AuthProvider = ({ children }) => {
     resendVerificationOTP,
     register,
     loginWithPassword,
-    sendSigninOTP,
-    verifySigninOTP,
-    resendSigninOTP,
     logout,
     clearError,
     updateAccountDetails,
     changePassword,
-    setSigninMethod,
-    resetSigninOtpStates,
   };
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
