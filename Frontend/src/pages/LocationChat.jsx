@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import io from 'socket.io-client';
 import { useAuth } from '../hooks/useAuth';
 import { Navigate } from 'react-router-dom';
@@ -6,20 +6,7 @@ import { Navigate } from 'react-router-dom';
 const LocationChat = () => {
   const { user, isAuthenticated } = useAuth();
 
-  console.log('user in location chat : ' , JSON.stringify(user));
-  console.log("isauth in location chat. " , isAuthenticated);
-  // Redirect if not authenticated
-  if (!isAuthenticated || !user) {
-    return <Navigate to="/" replace />;
-  }
-
-  const currentUser = {
-    userId: user._id,
-    userName: user.name,
-    location: user.address?.city || 'Unknown Location'
-  };
-
-  // State management
+  // State management (hooks must be called first)
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [isConnected, setIsConnected] = useState(false);
@@ -28,14 +15,171 @@ const LocationChat = () => {
   const [typingUsers, setTypingUsers] = useState([]);
   const [isTyping, setIsTyping] = useState(false);
   const [error, setError] = useState(null);
+  const [currentLocation, setCurrentLocation] = useState(null);
+  const [locationPermission, setLocationPermission] = useState('prompt');
+  const [isRequestingLocation, setIsRequestingLocation] = useState(false);
 
   // Refs
   const socketRef = useRef(null);
   const messagesEndRef = useRef(null);
   const typingTimeoutRef = useRef(null);
+  const lastLocationRef = useRef(null);
+  const currentUserRef = useRef(null);
 
-  // Initialize socket connection
+  // Helper function to get current geolocation
+  const getCurrentLocation = () => {
+    return new Promise((resolve, reject) => {
+      if (!navigator.geolocation) {
+        reject(new Error('Geolocation is not supported by this browser'));
+        setLocationPermission('denied');
+        return;
+      }
+
+      setIsRequestingLocation(true);
+      setError(null);
+      
+      // Check permission first
+      if (navigator.permissions) {
+        navigator.permissions.query({ name: 'geolocation' }).then((result) => {
+          setLocationPermission(result.state);
+        });
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const coords = {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude
+          };
+          setCurrentLocation(coords);
+          setLocationPermission('granted');
+          setIsRequestingLocation(false);
+          setError(null);
+          resolve(coords);
+        },
+        (error) => {
+          console.error('Geolocation error:', error);
+          setIsRequestingLocation(false);
+          
+          let errorMessage = 'Failed to get location';
+          switch (error.code) {
+            case error.PERMISSION_DENIED:
+              setLocationPermission('denied');
+              errorMessage = 'Location access denied. You can still use General Chat.';
+              break;
+            case error.POSITION_UNAVAILABLE:
+              errorMessage = 'Location information unavailable';
+              break;
+            case error.TIMEOUT:
+              errorMessage = 'Location request timed out';
+              break;
+            default:
+              errorMessage = 'An unknown error occurred while getting location';
+              break;
+          }
+          
+          setError(errorMessage);
+          reject(error);
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 15000, // Increased timeout
+          maximumAge: 300000 // 5 minutes
+        }
+      );
+    });
+  };
+
+  // Effect to request location on component mount
   useEffect(() => {
+    if (isAuthenticated && user) {
+      getCurrentLocation().catch(() => {
+        // Continue with profile coordinates or fallback
+      });
+    }
+  }, [isAuthenticated, user]);
+
+  // Helper function to create location room based on coordinates
+  const createLocationRoom = useCallback((lat, lng) => {
+    // Check if coordinates are valid
+    if (!lat || !lng || lat === 0 || lng === 0) {
+      return 'general-chat'; // Fallback for users without location
+    }
+    
+    // Round coordinates to create grid-based rooms for 10km radius
+    // Using approximately 0.1 degree grid (roughly 10-11km at equator)
+    const gridLat = Math.round(lat * 10) / 10;
+    const gridLng = Math.round(lng * 10) / 10;
+    return `geo-${gridLat},${gridLng}`;
+  }, []);
+
+  // Create currentUser with coordinates-based location
+  // Prioritize current location, then profile coordinates, then fallback
+  const currentUser = useMemo(() => {
+    const userLat = currentLocation?.lat || user?.address?.geolocation?.lat || 0;
+    const userLng = currentLocation?.lng || user?.address?.geolocation?.lng || 0;
+    const locationRoom = createLocationRoom(userLat, userLng);
+    
+    const newUser = {
+      userId: user?._id || 'anonymous',
+      userName: user?.name || user?.username || 'Anonymous',
+      location: locationRoom,
+      coordinates: {
+        lat: userLat,
+        lng: userLng
+      },
+      displayLocation: userLat && userLng && userLat !== 0 && userLng !== 0 
+        ? (currentLocation 
+            ? `📍 ${userLat.toFixed(3)}, ${userLng.toFixed(3)} (Current)` 
+            : (user?.address?.city || user?.city || `${userLat.toFixed(3)}, ${userLng.toFixed(3)}`))
+        : 'General Chat'
+    };
+    
+    currentUserRef.current = newUser;
+    return newUser;
+  }, [currentLocation, user, createLocationRoom]);
+
+  // Only log once when user or location changes significantly
+  const debugInfo = useRef({ lastLocation: null, lastUserId: null, hasLogged: false });
+  
+  useEffect(() => {
+    if (currentUser.location && currentUser.userId !== 'anonymous' && !debugInfo.current.hasLogged) {
+      console.log('LocationChat - User location determined:', {
+        location: currentUser.location,
+        coordinates: currentUser.coordinates,
+        displayLocation: currentUser.displayLocation
+      });
+      debugInfo.current.hasLogged = true;
+    }
+  }, [currentUser.location, currentUser.userId, currentUser.coordinates, currentUser.displayLocation]);
+
+  // Initialize socket connection (hook must be called before any returns)
+  useEffect(() => {
+    // Don't initialize socket if user is not authenticated
+    if (!isAuthenticated || !user) {
+      return;
+    }
+
+    // Use the current user from ref to avoid dependency issues
+    const currentUserData = currentUserRef.current;
+    if (!currentUserData) return;
+
+    // Prevent reconnection if location hasn't changed
+    if (lastLocationRef.current === currentUserData.location && socketRef.current?.connected) {
+      return;
+    }
+
+    // Clean up existing socket before creating new one
+    if (socketRef.current) {
+      socketRef.current.emit('leaveLocation', {
+        userId: currentUserData.userId,
+        location: lastLocationRef.current
+      });
+      socketRef.current.disconnect();
+    }
+
+    lastLocationRef.current = currentUserData.location;
+    
     const serverUrl ='http://localhost:5001';
     
     socketRef.current = io(serverUrl, {
@@ -49,25 +193,24 @@ const LocationChat = () => {
 
     // Connection event handlers
     socket.on('connect', () => {
-      console.log('Connected to server');
       setIsConnected(true);
       setError(null);
       
       // Join location-based room
       socket.emit('joinLocation', {
-        userId: currentUser.userId,
-        userName: currentUser.userName,
-        location: currentUser.location
+        userId: currentUserData.userId,
+        userName: currentUserData.userName,
+        location: currentUserData.location,
+        coordinates: currentUserData.coordinates
       });
     });
 
     socket.on('disconnect', () => {
-      console.log('Disconnected from server');
       setIsConnected(false);
     });
 
     socket.on('connect_error', (error) => {
-      console.error('Connection error:', error);
+      console.error('LocationChat - Connection error:', error);
       setError('Failed to connect to chat server');
       setIsConnected(false);
     });
@@ -77,12 +220,12 @@ const LocationChat = () => {
       setMessages(prev => [...prev, messageData]);
     });
 
-    socket.on('userJoined', (data) => {
-      console.log(`${data.userName} joined the chat`);
+    socket.on('userJoined', () => {
+      // Removed console.log to reduce spam
     });
 
-    socket.on('userLeft', (data) => {
-      console.log(`${data.userName} left the chat`);
+    socket.on('userLeft', () => {
+      // Removed console.log to reduce spam
     });
 
     socket.on('activeUsersCount', (data) => {
@@ -91,6 +234,10 @@ const LocationChat = () => {
 
     socket.on('activeUsersUpdate', (data) => {
       setActiveUsers(data.activeCount);
+    });
+
+    socket.on('nearbyUsers', () => {
+      // You can store this data in state if you want to show nearby users list
     });
 
     socket.on('userTyping', (data) => {
@@ -115,47 +262,81 @@ const LocationChat = () => {
     return () => {
       if (socket) {
         socket.emit('leaveLocation', {
-          userId: currentUser.userId,
-          location: currentUser.location
+          userId: currentUserData.userId,
+          location: currentUserData.location
         });
         socket.disconnect();
       }
     };
-  }, [currentUser.userId, currentUser.userName, currentUser.location]);
+  }, [isAuthenticated, user]); // Simplified dependencies
 
-  // Load chat history
+  // Load chat history (must be called before any returns)
   useEffect(() => {
+    // Don't load chat history if user is not authenticated
+    if (!isAuthenticated || !user) {
+      return;
+    }
+
+    const currentUserData = currentUserRef.current;
+    if (!currentUserData || !currentUserData.location) {
+      setIsLoading(false);
+      return;
+    }
+
     const loadChatHistory = async () => {
       try {
         setIsLoading(true);
         const serverUrl = 'http://localhost:5001';
-        const response = await fetch(`${serverUrl}/api/messages/${encodeURIComponent(currentUser.location)}/recent`);
+        const url = `${serverUrl}/api/messages/${encodeURIComponent(currentUserData.location)}/recent`;
+        
+        const response = await fetch(url);
         
         if (response.ok) {
           const data = await response.json();
           if (data.success) {
             setMessages(data.data.messages);
+          } else {
+            setError(data.message || 'Failed to load chat history');
           }
         } else {
-          console.error('Failed to load chat history');
+          setError(`Failed to load chat history (${response.status})`);
         }
-      } catch (error) {
-        console.error('Error loading chat history:', error);
+      } catch {
         setError('Failed to load chat history');
       } finally {
         setIsLoading(false);
       }
     };
 
-    if (currentUser.location) {
-      loadChatHistory();
-    }
-  }, [currentUser.location]);
+    loadChatHistory();
+  }, [isAuthenticated, user]); // Simplified dependencies
 
-  // Auto-scroll to bottom when new messages arrive
+  // Auto-scroll to bottom when new messages arrive (must be called before any returns)
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Remove excessive console logging - only log once when auth changes
+  const hasLoggedMount = useRef(false);
+  useEffect(() => {
+    if (isAuthenticated && user && !hasLoggedMount.current) {
+      console.log('LocationChat - Component mounted for user:', user?.name || 'Anonymous');
+      hasLoggedMount.current = true;
+    }
+  }, [isAuthenticated, user]);
+
+  // Since this is now a protected route, user should always be authenticated
+  // But we'll keep a safety check just in case
+  if (!user) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading user data...</p>
+        </div>
+      </div>
+    );
+  }
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -184,7 +365,8 @@ const LocationChat = () => {
       userId: currentUser.userId,
       userName: currentUser.userName,
       message: newMessage.trim(),
-      location: currentUser.location
+      location: currentUser.location,
+      coordinates: currentUser.coordinates
     });
 
     setNewMessage('');
@@ -278,13 +460,13 @@ const LocationChat = () => {
           <div className="flex items-center space-x-3">
             <div className="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center">
               <span className="text-white font-bold text-sm">
-                {currentUser.location.split(',')[0].charAt(0)}
+                📍
               </span>
             </div>
             <div>
-              <h1 className="font-semibold text-gray-800">{currentUser.location}</h1>
+              <h1 className="font-semibold text-gray-800">{currentUser.displayLocation}</h1>
               <p className="text-sm text-gray-500">
-                {activeUsers} active users
+                Local Area Chat • {activeUsers} active users
                 {!isConnected && ' • Disconnected'}
               </p>
             </div>
@@ -304,6 +486,55 @@ const LocationChat = () => {
       {error && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 text-sm">
           {error}
+        </div>
+      )}
+
+      {/* Location Permission Banner */}
+      {locationPermission === 'denied' && (
+        <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 text-sm">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <span>📍</span>
+              <span>Enable location access to join local area chats within 10km radius</span>
+            </div>
+            <button
+              onClick={() => getCurrentLocation()}
+              className="px-3 py-1 bg-yellow-600 text-white rounded hover:bg-yellow-700 text-xs"
+            >
+              Enable Location
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Location Loading Banner */}
+      {isRequestingLocation && (
+        <div className="bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 text-sm">
+          <div className="flex items-center space-x-2">
+            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
+            <span>Getting your location...</span>
+          </div>
+        </div>
+      )}
+
+      {/* General Chat Notice */}
+      {currentUser.location === 'general-chat' && (
+        <div className="bg-gray-100 border border-gray-300 text-gray-700 px-4 py-3 text-sm">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <span>🌍</span>
+              <span>You're in General Chat. Enable location to join your local area chat!</span>
+            </div>
+            {locationPermission !== 'denied' && (
+              <button
+                onClick={() => getCurrentLocation()}
+                className="px-3 py-1 bg-gray-600 text-white rounded hover:bg-gray-700 text-xs"
+                disabled={isRequestingLocation}
+              >
+                {isRequestingLocation ? 'Getting Location...' : 'Get Location'}
+              </button>
+            )}
+          </div>
         </div>
       )}
 

@@ -6,21 +6,70 @@ const locationChatSocket = (io) => {
   const userSockets = new Map(); // userId -> socketId
   const socketUsers = new Map(); // socketId -> userInfo
 
+  // Helper function to calculate distance between two coordinates
+  const calculateDistance = (lat1, lng1, lat2, lng2) => {
+    const R = 6371; // Earth's radius in kilometers
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLng = (lng2 - lng1) * Math.PI / 180;
+    const a = 
+      Math.sin(dLat/2) * Math.sin(dLat/2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+      Math.sin(dLng/2) * Math.sin(dLng/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c; // Distance in kilometers
+  };
+
+  // Helper function to find nearby users within 10km radius
+  const findNearbyUsers = (userLat, userLng, maxDistance = 10) => {
+    const nearbyUsers = [];
+    for (const [socketId, userInfo] of socketUsers.entries()) {
+      if (userInfo.coordinates && userInfo.coordinates.lat && userInfo.coordinates.lng) {
+        const distance = calculateDistance(
+          userLat, userLng,
+          userInfo.coordinates.lat, userInfo.coordinates.lng
+        );
+        if (distance <= maxDistance) {
+          nearbyUsers.push({
+            ...userInfo,
+            distance: distance.toFixed(2)
+          });
+        }
+      }
+    }
+    return nearbyUsers;
+  };
+
   io.on('connection', (socket) => {
-    console.log(`New socket connection: ${socket.id}`);
+    // Reduced logging - only log unique connections
+    if (!socketUsers.has(socket.id)) {
+      console.log(`New socket connection: ${socket.id}`);
+    }
 
     // Handle user joining a location-based chat room
     socket.on('joinLocation', (data) => {
       try {
-        let { userId, userName, location } = data;
+        const { userId, userName, location, coordinates } = data;
+        
         if (!userId || !userName || !location) {
           socket.emit('error', { message: 'Missing required fields: userId, userName, or location' });
           return;
         }
-        // Normalize location string
-        location = location.trim().toLowerCase();
-        // Store user info
-        socketUsers.set(socket.id, { userId, userName, location });
+
+        // Check if user is already connected to prevent duplicate logging
+        const existingUserInfo = socketUsers.get(socket.id);
+        if (existingUserInfo && existingUserInfo.userId === userId && existingUserInfo.location === location) {
+          console.log(`User ${userName} already connected to ${location}, skipping duplicate join`);
+          return;
+        }
+
+        // Store user info with coordinates
+        const userInfo = { 
+          userId, 
+          userName, 
+          location,
+          coordinates: coordinates || { lat: 0, lng: 0 }
+        };
+        socketUsers.set(socket.id, userInfo);
         userSockets.set(userId, socket.id);
         // Join the location room
         socket.join(location);
@@ -30,13 +79,15 @@ const locationChatSocket = (io) => {
         }
         activeUsers.get(location).add(userId);
 
-        console.log(`User ${userName} (${userId}) joined location: ${location}`);
+        console.log(`User ${userName} (${userId}) joined location: ${location}`, 
+          coordinates ? `at coordinates: ${coordinates.lat}, ${coordinates.lng}` : 'without coordinates');
 
         // Notify others in the location about new user
         socket.to(location).emit('userJoined', {
           userId,
           userName,
           location,
+          coordinates,
           timestamp: new Date()
         });
 
@@ -45,8 +96,17 @@ const locationChatSocket = (io) => {
         socket.emit('activeUsersUpdate', { 
           location, 
           activeCount,
-          message: `${activeCount} users active in ${location}`
+          message: `${activeCount} users active in your area`
         });
+
+        // If user has coordinates, find nearby users
+        if (coordinates && coordinates.lat && coordinates.lng && coordinates.lat !== 0 && coordinates.lng !== 0) {
+          const nearbyUsers = findNearbyUsers(coordinates.lat, coordinates.lng);
+          socket.emit('nearbyUsers', {
+            count: nearbyUsers.length,
+            users: nearbyUsers.slice(0, 10) // Limit to 10 users for performance
+          });
+        }
 
         // Broadcast updated active count to all users in location
         io.to(location).emit('activeUsersCount', { location, activeCount });
@@ -60,7 +120,8 @@ const locationChatSocket = (io) => {
     // Handle sending messages
     socket.on('sendMessage', async (data) => {
       try {
-        let { userId, userName, message, location } = data;
+        const { userId, userName, message, location, coordinates } = data;
+        
         if (!userId || !userName || !message || !location) {
           socket.emit('error', { message: 'Missing required fields for sending message' });
           return;
@@ -75,12 +136,14 @@ const locationChatSocket = (io) => {
           socket.emit('error', { message: 'Message too long (max 1000 characters)' });
           return;
         }
-        // Create new message document
+
+        // Create new message document with coordinates
         const newMessage = new GroupMessage({
           senderId: userId,
           senderName: userName,
           message: message.trim(),
           location,
+          coordinates: coordinates || { lat: 0, lng: 0 },
           timestamp: new Date()
         });
         // Save to database
@@ -96,6 +159,7 @@ const locationChatSocket = (io) => {
           senderName: savedMessage.senderName,
           message: savedMessage.message,
           location: savedMessage.location,
+          coordinates: savedMessage.coordinates,
           timestamp: savedMessage.timestamp
         };
         // Broadcast message to all users in the location

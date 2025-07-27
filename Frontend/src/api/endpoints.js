@@ -33,6 +33,20 @@ export const API_ENDPOINTS = {
         CHANGE_AVATAR: '/users/change-avatar',
         CHANGE_COVER: '/users/change-cover-images',
         WATCH_HISTORY: '/users/watch-history'
+    },
+
+    // Product/Supplier Listing endpoints
+    PRODUCTS: {
+        GET_ALL: '/products',
+        GET_BY_TYPE: '/products/type',
+        GET_BY_SUPPLIER: '/products/supplier',
+        GET_BY_ID: '/products',
+        CREATE: '/products',
+        UPDATE: '/products',
+        DELETE: '/products',
+        MY_PRODUCTS: '/products/user/my-products',
+        TOGGLE_STATUS: '/products',
+        UPLOAD_IMAGES: '/products/upload-images'
     }
 };
 
