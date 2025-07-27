@@ -17,6 +17,7 @@ const getUserCompleteProfile = asyncHandler(async (req, res) => {
 
   // Get user details
   const user = await User.findById(userId).select("-password -refresh_token");
+  console.log("User details:", user);
   if (!user) {
     throw new ApiError(404, "User not found");
   }
@@ -194,10 +195,30 @@ const getUserCompleteProfile = asyncHandler(async (req, res) => {
       ? avgRatingReceived[0].avgRating.toFixed(1)
       : 0;
 
+  // Calculate if profile is complete
+  const isProfileComplete = !!(
+    user.fullname &&
+    user.email &&
+    user.phone &&
+    user.address &&
+    user.address.city &&
+    user.address.state
+  );
+
+  // Update the database if the isProfileComplete status is different
+  if (user.isProfileComplete !== isProfileComplete) {
+    await User.findByIdAndUpdate(userId, { isProfileComplete });
+    user.isProfileComplete = isProfileComplete;
+    console.log(
+      `Updated isProfileComplete for user ${userId} to ${isProfileComplete}`
+    );
+  }
+
   const profileData = {
     user: {
       ...user.toObject(),
       profileCompletion: calculateProfileCompletion(user),
+      isProfileComplete: isProfileComplete,
     },
     statistics: {
       samples: {
@@ -1415,6 +1436,27 @@ const updateUserProfile = asyncHandler(async (req, res) => {
   if (!updatedUser) {
     throw new ApiError(404, "User not found");
   }
+
+  // Calculate and update profile completion status
+  const isProfileComplete = !!(
+    updatedUser.fullname &&
+    updatedUser.email &&
+    updatedUser.phone &&
+    updatedUser.address &&
+    updatedUser.address.city &&
+    updatedUser.address.state
+  );
+
+  // Update the isProfileComplete field if it's different
+  if (updatedUser.isProfileComplete !== isProfileComplete) {
+    await User.findByIdAndUpdate(userId, { isProfileComplete }, { new: true });
+    updatedUser.isProfileComplete = isProfileComplete;
+  }
+
+  console.log(
+    "Profile update completed. Profile complete status:",
+    isProfileComplete
+  );
 
   res
     .status(200)

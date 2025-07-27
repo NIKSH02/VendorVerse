@@ -13,8 +13,15 @@ import {
 import LandingPage from "./pages/LandingPage";
 import AllItemsPage from "./pages/AllItemsPage";
 import AboutPage from "./pages/AboutPage";
-import SpecialItemsPage from "./pages/SpecialItemsPage";
-import RawConnectDashboard from "./pages/RawConnectDashboard_fixed";
+// New modular dashboard components
+import Profile from "./pages/Profile";
+import MyListings from "./pages/MyListings";
+import AddProduct from "./pages/AddProduct";
+import EditProduct from "./pages/EditProduct";
+import OrdersToFulfill from "./pages/OrdersToFulfill";
+import OrdersPlaced from "./pages/OrdersPlaced";
+import Reviews from "./pages/Reviews";
+import Notifications from "./pages/Notifications";
 import { useAuth } from "./hooks/useAuth";
 import PersonalChatUI from "./pages/PersonalChatUi";
 
