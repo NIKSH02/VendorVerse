@@ -12,14 +12,11 @@ const {
 const { sendSignupOTP, sendSigninOTPEmail } = require("../utils/emailService");
 
 const registerUser = asynchandler(async (req, res) => {
-  const { username, email, password, name, fullname, phone } = req.body;
+  const { username, email, password } = req.body;
   console.log("Registration request:", {
     username,
     email,
     password: password ? "PROVIDED" : "MISSING",
-    name,
-    fullname,
-    phone,
   });
 
   // Simple validation - only require username, email, and password
@@ -37,13 +34,42 @@ const registerUser = asynchandler(async (req, res) => {
             email: existedUser.email,
             username: existedUser.username,
             isEmailVerified: existedUser.isEmailVerified,
+            hasRealPassword:
+              existedUser.password &&
+              !existedUser.password.startsWith("temp_password_"),
+            isTemporary: existedUser.username.startsWith("temp_"),
           }
         : "NO_USER_FOUND"
     );
 
     if (existedUser) {
-      // User already exists
-      throw new apiError(409, "User with this email already exists");
+      // Check if this is a temporary user from email verification
+      const isTemporaryUser =
+        existedUser.username.startsWith("temp_") &&
+        existedUser.password.startsWith("temp_password_");
+
+      if (isTemporaryUser && existedUser.isEmailVerified) {
+        // This is a verified email but incomplete registration - update the user
+        console.log("Updating temporary user with complete registration data");
+        existedUser.username = username.toLowerCase();
+        existedUser.password = password;
+        existedUser.name = username;
+        existedUser.fullname = username;
+        existedUser.phone = `temp_${Date.now()}`;
+        await existedUser.save();
+
+        const updatedUser = await User.findById(existedUser._id).select(
+          "-password -refresh_token"
+        );
+        return res
+          .status(201)
+          .json(
+            new ApiResponse(201, "User registered successfully", updatedUser)
+          );
+      } else if (!isTemporaryUser) {
+        // User already exists and is fully registered
+        throw new apiError(409, "User with this email already exists");
+      }
     }
 
     // Check if username is already taken
@@ -72,9 +98,9 @@ const registerUser = asynchandler(async (req, res) => {
       username: username.toLowerCase(),
       email,
       password, // Will be hashed by pre-save middleware
-      name: name || username, // Use provided name or username as default
-      fullname: fullname || username, // Use provided fullname or username as default
-      phone: phone || `temp_${Date.now()}`, // Use provided phone or temporary
+      name: username, // Use username as default name
+      fullname: username, // Use username as default fullname
+      phone: `temp_${Date.now()}`, // Temporary phone number
       address: userAddress,
       avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=6366f1&color=ffffff&size=200`,
       isEmailVerified: false, // Will be verified separately if needed

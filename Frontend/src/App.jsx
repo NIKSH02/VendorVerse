@@ -12,8 +12,13 @@ import {
 import LandingPage from "./pages/LandingPage";
 import AllItemsPage from "./pages/AllItemsPage";
 import AboutPage from "./pages/AboutPage";
-import SpecialItemsPage from "./pages/SpecialItemsPage";
-import RawConnectDashboard from "./pages/RawConnectDashboard_fixed";
+// New modular dashboard components
+import Profile from "./pages/Profile";
+import MyListings from "./pages/MyListings";
+import OrdersToFulfill from "./pages/OrdersToFulfill";
+import OrdersPlaced from "./pages/OrdersPlaced";
+import Reviews from "./pages/Reviews";
+import Notifications from "./pages/Notifications";
 import { useAuth } from "./hooks/useAuth";
 
 // Protected Route Component
@@ -108,19 +113,58 @@ function App() {
                 </ProtectedRoute>
               }
             />
+
             <Route
-              path="/special-items"
+              path="/Profile"
+              element={<Navigate to="/dashboard/profile" replace />}
+            />
+
+            {/* New Modular Dashboard Routes */}
+            <Route
+              path="/dashboard/profile"
               element={
                 <ProtectedRoute>
-                  <SpecialItemsPage />
+                  <Profile />
                 </ProtectedRoute>
               }
             />
             <Route
-              path="/Profile"
+              path="/dashboard/listings"
               element={
                 <ProtectedRoute>
-                  <RawConnectDashboard />
+                  <MyListings />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/orders-to-fulfill"
+              element={
+                <ProtectedRoute>
+                  <OrdersToFulfill />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/orders-placed"
+              element={
+                <ProtectedRoute>
+                  <OrdersPlaced />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/reviews"
+              element={
+                <ProtectedRoute>
+                  <Reviews />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/notifications"
+              element={
+                <ProtectedRoute>
+                  <Notifications />
                 </ProtectedRoute>
               }
             />

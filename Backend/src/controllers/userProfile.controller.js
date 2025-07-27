@@ -17,6 +17,7 @@ const getUserCompleteProfile = asyncHandler(async (req, res) => {
 
   // Get user details
   const user = await User.findById(userId).select("-password -refresh_token");
+  console.log("User details:", user);
   if (!user) {
     throw new ApiError(404, "User not found");
   }

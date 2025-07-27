@@ -376,8 +376,22 @@ const getProductById = async (req, res) => {
 // Update product (only by owner)
 const updateProduct = async (req, res) => {
   try {
+    // Add explicit user validation
+    if (!req.user || !req.user._id) {
+      return res.status(401).json({
+        success: false,
+        message: "Authentication required. User not found in request.",
+      });
+    }
+
     const { id } = req.params;
     const updateData = req.body;
+
+    console.log("Update product request:", {
+      productId: id,
+      userId: req.user._id,
+      updateData: updateData,
+    });
 
     const product = await SupplierListing.findById(id);
 
@@ -387,6 +401,12 @@ const updateProduct = async (req, res) => {
         message: "Product not found",
       });
     }
+
+    console.log("Product found, checking ownership:", {
+      productUserId: product.userId.toString(),
+      requestUserId: req.user._id.toString(),
+      isOwner: product.userId.toString() === req.user._id.toString(),
+    });
 
     // Check if user is the owner of the product
     if (product.userId.toString() !== req.user._id.toString()) {
@@ -461,12 +481,15 @@ const updateProduct = async (req, res) => {
       { new: true, runValidators: true }
     ).populate("userId", "name username fullname phone email");
 
+    console.log("Product updated successfully:", updatedProduct._id);
+
     res.status(200).json({
       success: true,
       message: "Product updated successfully",
       data: updatedProduct,
     });
   } catch (error) {
+    console.error("Update product error:", error);
     res.status(400).json({
       success: false,
       message: "Error updating product",
@@ -478,6 +501,14 @@ const updateProduct = async (req, res) => {
 // Delete product (only by owner)
 const deleteProduct = async (req, res) => {
   try {
+    // Add explicit user validation
+    if (!req.user || !req.user._id) {
+      return res.status(401).json({
+        success: false,
+        message: "Authentication required. User not found in request.",
+      });
+    }
+
     const { id } = req.params;
 
     const product = await SupplierListing.findById(id);
@@ -504,6 +535,7 @@ const deleteProduct = async (req, res) => {
       message: "Product deleted successfully",
     });
   } catch (error) {
+    console.error("Delete product error:", error);
     res.status(500).json({
       success: false,
       message: "Error deleting product",
@@ -515,11 +547,23 @@ const deleteProduct = async (req, res) => {
 // Get user's own products
 const getMyProducts = async (req, res) => {
   try {
+    // Add explicit user validation
+    if (!req.user || !req.user._id) {
+      return res.status(401).json({
+        success: false,
+        message: "Authentication required. User not found in request.",
+      });
+    }
+
+    console.log("getMyProducts called by user:", req.user._id);
+
     const { page = 1, limit = 10, type, category } = req.query;
 
     const filter = { userId: req.user._id };
     if (type) filter.type = type;
     if (category) filter.category = category;
+
+    console.log("Filter applied:", filter);
 
     const skip = (page - 1) * limit;
 
@@ -529,6 +573,8 @@ const getMyProducts = async (req, res) => {
       .limit(Number(limit));
 
     const total = await SupplierListing.countDocuments(filter);
+
+    console.log(`Found ${products.length} products for user ${req.user._id}`);
 
     res.status(200).json({
       success: true,
@@ -540,6 +586,7 @@ const getMyProducts = async (req, res) => {
       },
     });
   } catch (error) {
+    console.error("getMyProducts error:", error);
     res.status(500).json({
       success: false,
       message: "Error fetching your products",
@@ -551,6 +598,14 @@ const getMyProducts = async (req, res) => {
 // Toggle product active status
 const toggleProductStatus = async (req, res) => {
   try {
+    // Add explicit user validation
+    if (!req.user || !req.user._id) {
+      return res.status(401).json({
+        success: false,
+        message: "Authentication required. User not found in request.",
+      });
+    }
+
     const { id } = req.params;
 
     console.log("Toggle Status Request:", {

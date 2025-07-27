@@ -142,7 +142,6 @@ export default function AuthForm({ isLogin = true, onToggle, onSuccess }) {
       username,
       email,
       password: password.length > 0 ? "[PRESENT]" : "[MISSING]",
-      fullname: username,
     });
 
     // Validate required fields
@@ -153,14 +152,11 @@ export default function AuthForm({ isLogin = true, onToggle, onSuccess }) {
       return;
     }
 
-    // Prepare basic registration data (no location during registration)
+    // Prepare basic registration data - ONLY username, email, and password
     const registrationData = {
       username,
       email,
       password,
-      fullname: username,
-      name: username, // Display name
-      phone: "", // Will be completed in profile later
     };
 
     try {
