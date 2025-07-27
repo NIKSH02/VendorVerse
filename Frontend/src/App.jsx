@@ -92,6 +92,7 @@ function App() {
             <Route path="/global" element={<CommunityRequests />} />
             <Route path="/productdetail" element={<ProductDetail />} />
             <Route path="/locationchat" element={<LocationChat />} />
+             <Route path="/all-items" element={<AllItemsPage/>} />
             {/* Protected Routes - Authentication required */}
             <Route
               path="/Global"

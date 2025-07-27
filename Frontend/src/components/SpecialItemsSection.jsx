@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const specialItems = [
   {
@@ -34,6 +35,7 @@ const specialItems = [
 ];
 
 function SpecialItemsSection() {
+  const navigate = useNavigate();
   return (
     <section className="py-16 bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -91,15 +93,13 @@ function SpecialItemsSection() {
                   {item.description}
                 </p>
 
-                {/* Action Buttons */}
+                {/* Action Button: Place Order */}
                 <div className="flex gap-2">
-                  <button className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 px-2 rounded-lg transition-all duration-300 transform hover:scale-105 hover:shadow-lg text-xs">
-                    Order Now
-                  </button>
-                  <button className="w-8 h-8 flex items-center justify-center bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                    </svg>
+                  <button
+                    className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 px-2 rounded-lg transition-all duration-300 transform hover:scale-105 hover:shadow-lg text-xs"
+                    onClick={() => navigate('/productdetail', { state: { item } })}
+                  >
+                    Place Order
                   </button>
                 </div>
               </div>
@@ -110,7 +110,7 @@ function SpecialItemsSection() {
         {/* Explore All Special Items Button */}
         <div className="mt-16 text-center">
           <button
-            onClick={() => window.location.href = '/al-ite'}
+            onClick={() => navigate('/all-items')}
             className="inline-flex items-center gap-2 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-8 py-4 rounded-xl text-lg font-semibold shadow-lg hover:shadow-2xl transform hover:scale-105 transition-all duration-300"
           >
             Explore All Special Items

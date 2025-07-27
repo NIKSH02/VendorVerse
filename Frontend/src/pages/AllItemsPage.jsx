@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 
@@ -133,6 +134,7 @@ const specialSubcategories = ['Snacks', 'Beverages', 'Sweets']; // Example, adju
 
 
 function AllItemsPage() {
+  const navigate = useNavigate();
   const [mainCategory, setMainCategory] = useState('All Items');
   const [rawSubcategory, setRawSubcategory] = useState('All');
   const [specialSubcategory, setSpecialSubcategory] = useState('All');
@@ -335,10 +337,7 @@ function AllItemsPage() {
                     alt={item.name}
                     className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-500"
                   />
-                  {/* Minimum Order Badge */}
-                  <div className="absolute bottom-4 left-4 z-20 bg-black/70 backdrop-blur-sm px-3 py-1 rounded-full">
-                    <span className="text-white text-xs">Min: {item.minOrder}</span>
-                  </div>
+                  {/* Minimum Order Badge removed */}
                 </div>
 
                 {/* Content Container */}
@@ -347,19 +346,17 @@ function AllItemsPage() {
                     {item.name}
                   </h3>
                   
-                  <p className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed mb-6">
+                  <p className="text-black text-sm leading-relaxed mb-6">
                     {item.description}
                   </p>
 
-                  {/* Action Buttons */}
+                  {/* Action Button: Place Order */}
                   <div className="flex gap-3">
-                    <button className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3 px-4 rounded-xl transition-all duration-300 transform hover:scale-105 hover:shadow-lg">
-                      Quick Order
-                    </button>
-                    <button className="w-12 h-12 flex items-center justify-center bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-xl transition-colors">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-600 dark:text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                      </svg>
+                    <button
+                      className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3 px-4 rounded-xl transition-all duration-300 transform hover:scale-105 hover:shadow-lg"
+                      onClick={() => navigate('/productdetail', { state: { item } })}
+                    >
+                      Place Order
                     </button>
                   </div>
                 </div>

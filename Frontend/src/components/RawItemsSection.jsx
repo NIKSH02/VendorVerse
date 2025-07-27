@@ -100,7 +100,7 @@ function RawItemsSection() {
           {rawItems.map((item) => (
             <div
               key={item.id}
-              className="group relative bg-gradient-to-br from-white to-gray-50 rounded-xl shadow-md hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 min-h-[320px]"
+              className="group relative bg-gradient-to-br from-white to-gray-50 rounded-2xl shadow-lg hover:shadow-2xl transform hover:-translate-y-1 transition-all duration-300"
             >
               {/* Category Tag */}
               <div className="absolute top-4 left-4 z-10">
@@ -117,38 +117,31 @@ function RawItemsSection() {
               </div>
 
               {/* Image Container with Gradient Overlay */}
-              <div className="relative h-36 rounded-t-xl overflow-hidden">
+              <div className="relative h-56 rounded-t-2xl overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent z-10"></div>
                 <img
                   src={item.image}
                   alt={item.name}
                   className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-500"
                 />
-                {/* Minimum Order Badge */}
-                <div className="absolute bottom-4 left-4 z-20 bg-black/70 backdrop-blur-sm px-3 py-1 rounded-full">
-                  <span className="text-white text-xs">Min: {item.minOrder}</span>
-                </div>
+                {/* Minimum Order Badge removed */}
               </div>
 
               {/* Content Container */}
-              <div className="p-4">
-                <h3 className="text-lg font-bold text-gray-900 mb-2 group-hover:text-orange-500 transition-colors">
+              <div className="p-6">
+                <h3 className="text-xl font-bold text-gray-900 mb-2 group-hover:text-orange-500 transition-colors">
                   {item.name}
                 </h3>
-                
-                <p className="text-gray-600 text-xs leading-relaxed mb-4">
+                <p className="text-black text-sm leading-relaxed mb-6">
                   {item.description}
                 </p>
-
-                {/* Action Buttons */}
-                <div className="flex gap-2">
-                  <button className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 px-2 rounded-lg transition-all duration-300 transform hover:scale-105 hover:shadow-lg text-xs">
-                    Quick Order
-                  </button>
-                  <button className="w-8 h-8 flex items-center justify-center bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                    </svg>
+                {/* Action Button: Place Order */}
+                <div className="flex gap-3">
+                  <button
+                    className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3 px-4 rounded-xl transition-all duration-300 transform hover:scale-105 hover:shadow-lg"
+                    onClick={() => navigate('/productdetail', { state: { item } })}
+                  >
+                    Place Order
                   </button>
                 </div>
               </div>
@@ -164,7 +157,7 @@ function RawItemsSection() {
         {/* Explore All Items Button */}
         <div className="mt-16 text-center">
           <button
-            onClick={() => navigate('/all-items?sort=Raw Items')}
+            onClick={() => navigate('/all-items')}
             className="inline-flex items-center gap-2 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-8 py-4 rounded-xl text-lg font-semibold shadow-lg hover:shadow-2xl transform hover:scale-105 transition-all duration-300"
           >
             Explore All Items
