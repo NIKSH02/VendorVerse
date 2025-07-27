@@ -107,22 +107,6 @@ const AppRoutes = () => {
             </ProtectedRoute>
           }
         />
-        <Route
-          path="/special-items"
-          element={
-            <ProtectedRoute>
-              <SpecialItemsPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/Profile"
-          element={
-            <ProtectedRoute>
-              <RawConnectDashboard />
-            </ProtectedRoute>
-          }
-        />
       </Routes>
     </Router>
   );
