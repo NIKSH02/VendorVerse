@@ -82,7 +82,8 @@ function App() {
             <Route path="/" element={<LandingPage />} />
             <Route path="/about" element={<AboutPage />} />
             <Route path="/authpage" element={<AuthPage />} />
-
+            <Route path="global" element={<CommunityRequests />} />
+            <Route path="/productdetail" element={<ProductDetail />} />
             {/* Protected Routes - Authentication required */}
             <Route
               path="/Global"

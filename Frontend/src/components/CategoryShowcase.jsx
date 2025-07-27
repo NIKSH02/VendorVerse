@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import NewRequestSection from './NewRequestSection';
 import SpecialItemsSection from './SpecialItemsSection';
 import HeroSection from './HeroSection';
+import TextType from  './TextType'
 
 const CategoryShowcase = () => {
   const headingText = "welcome to street supply.";
@@ -113,15 +114,20 @@ const CategoryShowcase = () => {
 
   return (
     <div className="min-h-screen bg-white text-gray-800 font-inter flex flex-col items-center justify-center p-4 sm:p-8">
-      <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
-      <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-center mb-4 mt-0 text-black leading-tight" style={{ marginTop: '15px' }}>
-        <span className="typewriter-text">
-          {displayedText}
-          <span className="inline-block w-1.5 h-8 sm:h-10 lg:h-12 bg-orange-500 animate-blink ml-1"></span>
-        </span>
+      <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-center mb-4 mt-0 text-black leading-tight" style={{ marginBottom: '3.5rem' }}>
+            {/*<span className="typewriter-text"> */}
+          <TextType 
+            text={["Welcome to VenderVerse ", "Your Trusted Street Vendor Network", "Happy Shopping!"]}
+            typingSpeed={75}
+            pauseDuration={1500}
+            showCursor={true}
+            cursorCharacter="|"
+          />
+          {/* <span className="inline-block w-1.5 h-8 sm:h-10 lg:h-12 bg-orange-500 animate-blink ml-1"></span>
+        </span> */}
       </h1>
       {/* Restored Search Bar */}
-      <div className="flex justify-center mb-8 w-full">
+      <div className="flex justify-center mb-16 w-full">
         <div className="relative w-full max-w-xl">
           <input
             type="text"
