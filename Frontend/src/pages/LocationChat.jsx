@@ -13,10 +13,11 @@ const LocationChat = () => {
     return <Navigate to="/" replace />;
   }
 
+  const normalizedLocation = (user.address?.city || 'Unknown Location').trim().toLowerCase();
   const currentUser = {
     userId: user._id,
     userName: user.name,
-    location: user.address?.city || 'Unknown Location'
+    location: (user.address?.city || 'Unknown Location').trim().toLowerCase()
   };
 
   // State management
@@ -36,7 +37,7 @@ const LocationChat = () => {
 
   // Initialize socket connection
   useEffect(() => {
-    const serverUrl ='http://localhost:5001';
+    const serverUrl ='https://cc5wnhxq-5001.inc1.devtunnels.ms';
     
     socketRef.current = io(serverUrl, {
       transports: ['websocket', 'polling'],
@@ -128,7 +129,7 @@ const LocationChat = () => {
     const loadChatHistory = async () => {
       try {
         setIsLoading(true);
-        const serverUrl = 'http://localhost:5001';
+        const serverUrl = 'https://cc5wnhxq-5001.inc1.devtunnels.ms';
         const response = await fetch(`${serverUrl}/api/messages/${encodeURIComponent(currentUser.location)}/recent`);
         
         if (response.ok) {

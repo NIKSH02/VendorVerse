@@ -57,7 +57,7 @@ const groupChatController = {
   // Get recent messages for a location (used for initial load)
   getRecentMessages: async (req, res) => {
     try {
-      const { location } = req.params;
+      let { location } = req.params;
       const limit = 30; // Last 30 messages
       
       if (!location) {
@@ -66,11 +66,28 @@ const groupChatController = {
           message: 'Location parameter is required' 
         });
       }
+      
+      // Normalize location
+      location = location.trim().toLowerCase();
+      
+      console.log('Fetching messages for location:', location);
 
       const messages = await GroupMessage.find({ location })
         .sort({ timestamp: -1 })
         .limit(limit)
         .exec();
+
+      console.log('Found messages:', messages.length);
+
+      // Return empty array if no messages found
+      if (!messages || messages.length === 0) {
+        return res.status(200).json({
+          success: true,
+          data: {
+            messages: []
+          }
+        });
+      }
 
       // Reverse to show oldest first in chat
       const reversedMessages = messages.reverse();
