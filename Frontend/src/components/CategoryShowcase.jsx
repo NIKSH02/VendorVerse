@@ -119,7 +119,7 @@ const CategoryShowcase = () => {
 
   return (
     <div className="min-h-screen bg-white text-gray-800 font-inter flex flex-col items-center justify-center p-4 sm:p-8">
-      <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-center mb-4 mt-0 text-black leading-tight" style={{ marginBottom: '3.5rem' }}>
+      <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-center mb-4 mt-0 text-black leading-tight" style={{ marginBottom: '3.5rem',marginTop: '3.5rem' }}>
             {/*<span className="typewriter-text"> */}
           <TextType 
             text={["Welcome to VenderVerse ", "Your Trusted Street Vendor Network", "Happy Shopping!"]}

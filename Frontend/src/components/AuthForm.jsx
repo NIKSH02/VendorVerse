@@ -87,7 +87,6 @@ export default function AuthForm({ isLogin = true, onToggle, onSuccess }) {
       username,
       email,
       password: password.length > 0 ? "[PRESENT]" : "[MISSING]",
-      fullname: username,
     });
 
     // Validate required fields
@@ -98,14 +97,11 @@ export default function AuthForm({ isLogin = true, onToggle, onSuccess }) {
       return;
     }
 
-    // Prepare basic registration data (no location during registration)
+    // Prepare basic registration data - ONLY username, email, and password
     const registrationData = {
       username,
       email,
       password,
-      fullname: username,
-      name: username, // Display name
-      phone: "", // Will be completed in profile later
     };
 
     try {
@@ -143,8 +139,13 @@ export default function AuthForm({ isLogin = true, onToggle, onSuccess }) {
     if (username && password.length >= 1) {
       try {
         await loginWithPassword(username, password);
-        // Login successful - redirect directly to landing page
-        navigate('/');
+        // Login successful - show success message with redirect callback
+        onSuccess?.(
+          "login",
+          "🚀 Welcome Back!",
+          `Great to see you again, ${username}! You have successfully logged into your account.`,
+          () => navigate('/locationchat') // Redirect to profile after timeout
+        );
       } catch (error) {
         console.error("Login failed:", error);
       }

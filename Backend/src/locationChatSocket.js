@@ -11,21 +11,20 @@ const locationChatSocket = (io) => {
 
     // Handle user joining a location-based chat room
     socket.on('joinLocation', (data) => {
+      
       try {
-        const { userId, userName, location } = data;
-        
+        let { userId, userName, location } = data;
         if (!userId || !userName || !location) {
           socket.emit('error', { message: 'Missing required fields: userId, userName, or location' });
           return;
         }
-
+        // Normalize location string
+        location = location.trim().toLowerCase();
         // Store user info
         socketUsers.set(socket.id, { userId, userName, location });
         userSockets.set(userId, socket.id);
-
         // Join the location room
         socket.join(location);
-
         // Add user to active users for this location
         if (!activeUsers.has(location)) {
           activeUsers.set(location, new Set());
@@ -62,23 +61,21 @@ const locationChatSocket = (io) => {
     // Handle sending messages
     socket.on('sendMessage', async (data) => {
       try {
-        const { userId, userName, message, location } = data;
-        
+        let { userId, userName, message, location } = data;
         if (!userId || !userName || !message || !location) {
           socket.emit('error', { message: 'Missing required fields for sending message' });
           return;
         }
-
+        // Normalize location string
+        location = location.trim().toLowerCase();
         if (message.trim().length === 0) {
           socket.emit('error', { message: 'Message cannot be empty' });
           return;
         }
-
         if (message.length > 1000) {
           socket.emit('error', { message: 'Message too long (max 1000 characters)' });
           return;
         }
-
         // Create new message document
         const newMessage = new GroupMessage({
           senderId: userId,
@@ -87,10 +84,12 @@ const locationChatSocket = (io) => {
           location,
           timestamp: new Date()
         });
-
         // Save to database
         const savedMessage = await newMessage.save();
-
+        if (!savedMessage) {
+          socket.emit('error', { message: 'Message not saved to database' });
+          return;
+        }
         // Prepare message for broadcast
         const messageData = {
           _id: savedMessage._id,
@@ -100,12 +99,9 @@ const locationChatSocket = (io) => {
           location: savedMessage.location,
           timestamp: savedMessage.timestamp
         };
-
         // Broadcast message to all users in the location
         io.to(location).emit('receiveMessage', messageData);
-
         console.log(`Message sent in ${location} by ${userName}: ${message.substring(0, 50)}...`);
-
       } catch (error) {
         console.error('Error in sendMessage:', error);
         socket.emit('error', { message: 'Failed to send message' });
@@ -114,12 +110,11 @@ const locationChatSocket = (io) => {
 
     // Handle typing indicators
     socket.on('typing', (data) => {
-      const { userId, userName, location, isTyping } = data;
-      
+      let { userId, userName, location, isTyping } = data;
       if (!userId || !location) {
         return;
       }
-
+      location = location.trim().toLowerCase();
       // Broadcast typing status to others in the location (except sender)
       socket.to(location).emit('userTyping', {
         userId,
@@ -133,38 +128,35 @@ const locationChatSocket = (io) => {
     // Handle user leaving location
     socket.on('leaveLocation', (data) => {
       try {
-        const { userId, location } = data;
+        let { userId, location } = data;
         const userInfo = socketUsers.get(socket.id);
-        
         if (userInfo && userInfo.location) {
-          socket.leave(userInfo.location);
-          
+          // Normalize location string
+          location = userInfo.location.trim().toLowerCase();
+          socket.leave(location);
           // Remove from active users
-          if (activeUsers.has(userInfo.location)) {
-            activeUsers.get(userInfo.location).delete(userId);
-            
+          if (activeUsers.has(location)) {
+            activeUsers.get(location).delete(userId);
             // If no more users in location, clean up
-            if (activeUsers.get(userInfo.location).size === 0) {
-              activeUsers.delete(userInfo.location);
+            if (activeUsers.get(location).size === 0) {
+              activeUsers.delete(location);
             } else {
               // Update active count for remaining users
-              const activeCount = activeUsers.get(userInfo.location).size;
-              io.to(userInfo.location).emit('activeUsersCount', { 
-                location: userInfo.location, 
+              const activeCount = activeUsers.get(location).size;
+              io.to(location).emit('activeUsersCount', { 
+                location, 
                 activeCount 
               });
             }
           }
-
           // Notify others about user leaving
-          socket.to(userInfo.location).emit('userLeft', {
+          socket.to(location).emit('userLeft', {
             userId: userInfo.userId,
             userName: userInfo.userName,
-            location: userInfo.location,
+            location,
             timestamp: new Date()
           });
-
-          console.log(`User ${userInfo.userName} left location: ${userInfo.location}`);
+          console.log(`User ${userInfo.userName} left location: ${location}`);
         }
       } catch (error) {
         console.error('Error in leaveLocation:', error);
@@ -175,18 +167,16 @@ const locationChatSocket = (io) => {
     socket.on('disconnect', () => {
       try {
         const userInfo = socketUsers.get(socket.id);
-        
         if (userInfo) {
-          const { userId, userName, location } = userInfo;
-          
+          let { userId, userName, location } = userInfo;
+          // Normalize location string
+          location = location.trim().toLowerCase();
           // Clean up user data
           socketUsers.delete(socket.id);
           userSockets.delete(userId);
-          
           // Remove from active users
           if (activeUsers.has(location)) {
             activeUsers.get(location).delete(userId);
-            
             if (activeUsers.get(location).size === 0) {
               activeUsers.delete(location);
             } else {
@@ -195,7 +185,6 @@ const locationChatSocket = (io) => {
               io.to(location).emit('activeUsersCount', { location, activeCount });
             }
           }
-
           // Notify others about disconnection
           socket.to(location).emit('userLeft', {
             userId,
@@ -203,7 +192,6 @@ const locationChatSocket = (io) => {
             location,
             timestamp: new Date()
           });
-
           console.log(`User ${userName} disconnected from ${location}`);
         }
       } catch (error) {

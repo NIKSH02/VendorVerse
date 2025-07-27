@@ -3,6 +3,7 @@ import { AuthProvider } from "./context/AuthContext";
 import AuthPage from "./pages/AuthPage";
 import CommunityRequests from "./pages/CommunityRequests";
 import ProductDetail from "./pages/ProductDetail";
+import LocationChat from "./pages/LocationChat";
 import {
   BrowserRouter as Router,
   Routes,
@@ -12,10 +13,15 @@ import {
 import LandingPage from "./pages/LandingPage";
 import AllItemsPage from "./pages/AllItemsPage";
 import AboutPage from "./pages/AboutPage";
-import Creategroup from "./pages/Creategroup";
-
-import RawConnectDashboard from "./pages/RawConnectDashboard_fixed";
+// New modular dashboard components
+import Profile from "./pages/Profile";
+import MyListings from "./pages/MyListings";
+import OrdersToFulfill from "./pages/OrdersToFulfill";
+import OrdersPlaced from "./pages/OrdersPlaced";
+import Reviews from "./pages/Reviews";
+import Notifications from "./pages/Notifications";
 import { useAuth } from "./hooks/useAuth";
+import PersonalChatUI from "./pages/PersonalChatUi";
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -81,13 +87,11 @@ function App() {
           <Routes>
             {/* Public Routes - No authentication required */}
             <Route path="/" element={<LandingPage />} />
-            <Route path="/about" element={<AboutPage />} />
+            <Route path="/about" element={<PersonalChatUI />} />
             <Route path="/authpage" element={<AuthPage />} />
-            <Route path="global" element={<CommunityRequests />} />
+            <Route path="/global" element={<CommunityRequests />} />
             <Route path="/productdetail" element={<ProductDetail />} />
-               <Route path="/al-ite" element={<AllItemsPage />} />
-                 <Route path="/creategroup" element={<Creategroup />} />
-
+            <Route path="/locationchat" element={<LocationChat />} />
             {/* Protected Routes - Authentication required */}
             <Route
               path="/Global"
@@ -112,13 +116,59 @@ function App() {
                   <AllItemsPage />
                 </ProtectedRoute>
               }
-            /> */}
-          
+            />
+
             <Route
               path="/Profile"
+              element={<Navigate to="/dashboard/profile" replace />}
+            />
+
+            {/* New Modular Dashboard Routes */}
+            <Route
+              path="/dashboard/profile"
               element={
                 <ProtectedRoute>
-                  <RawConnectDashboard />
+                  <Profile />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/listings"
+              element={
+                <ProtectedRoute>
+                  <MyListings />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/orders-to-fulfill"
+              element={
+                <ProtectedRoute>
+                  <OrdersToFulfill />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/orders-placed"
+              element={
+                <ProtectedRoute>
+                  <OrdersPlaced />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/reviews"
+              element={
+                <ProtectedRoute>
+                  <Reviews />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/notifications"
+              element={
+                <ProtectedRoute>
+                  <Notifications />
                 </ProtectedRoute>
               }
             />

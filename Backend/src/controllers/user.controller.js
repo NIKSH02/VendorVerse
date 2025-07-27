@@ -12,14 +12,11 @@ const {
 const { sendSignupOTP, sendSigninOTPEmail } = require("../utils/emailService");
 
 const registerUser = asynchandler(async (req, res) => {
-  const { username, email, password, name, fullname, phone } = req.body;
+  const { username, email, password } = req.body;
   console.log("Registration request:", {
     username,
     email,
     password: password ? "PROVIDED" : "MISSING",
-    name,
-    fullname,
-    phone,
   });
 
   // Simple validation - only require username, email, and password
@@ -37,95 +34,65 @@ const registerUser = asynchandler(async (req, res) => {
             email: existedUser.email,
             username: existedUser.username,
             isEmailVerified: existedUser.isEmailVerified,
-            hasRealPassword: existedUser.password && !existedUser.password.startsWith("temp_password_"),
-            hasRealUsername: !existedUser.username.startsWith("temp_"),
           }
         : "NO_USER_FOUND"
     );
 
     if (existedUser) {
-      // Check if this is a fully registered user (not just email verified)
-      const isFullyRegistered = 
-        existedUser.isEmailVerified && 
-        existedUser.password && 
-        !existedUser.password.startsWith("temp_password_") &&
-        !existedUser.username.startsWith("temp_");
-
-      if (isFullyRegistered) {
-        throw new apiError(409, "User with this email already exists and is fully registered");
-      }
-
-      // If user exists but email is NOT verified, reject registration
-      if (!existedUser.isEmailVerified) {
-        throw new apiError(400, "Please verify your email first before completing registration");
-      }
-
-      // If user exists and email is verified but not fully registered, update them
-      if (existedUser.isEmailVerified) {
-        console.log("Updating existing email-verified user with registration data");
-        
-        // Check if the new username conflicts with any other user
-        const usernameConflict = await User.findOne({
-          username: username.toLowerCase(),
-          email: { $ne: email } // Exclude current user's email
-        });
-
-        if (usernameConflict) {
-          throw new apiError(409, "Username is already taken by another user");
-        }
-
-        // Update the existing user with full registration data
-        existedUser.username = username.toLowerCase();
-        existedUser.password = password; // Will be hashed by pre-save middleware
-        existedUser.name = name || username;
-        existedUser.fullname = fullname || username;
-        existedUser.phone = phone || `phone_${Date.now()}`;
-        existedUser.address = {
-          street: "To be updated",
-          city: "To be updated", 
-          state: "To be updated",
-          pincode: "000000",
-          geolocation: {
-            lat: 0.0,
-            lng: 0.0,
-          },
-        };
-        existedUser.avatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=6366f1&color=ffffff&size=200`;
-
-        const updatedUser = await existedUser.save();
-        
-        // Generate tokens for the updated user
-        const { generateAccessTokenAndRefreshToken } = require("../controllers/login.controller");
-        const { accessToken, refreshToken } = await generateAccessTokenAndRefreshToken(updatedUser._id);
-        
-        const createdUser = await User.findById(updatedUser._id).select(
-          "-password -refresh_token"
-        );
-
-        console.log("User registration completed successfully for existing email-verified user");
-        
-        // Set cookies
-        const options = {
-          httpOnly: true,
-          secure: false, // Set to true in production with HTTPS
-          sameSite: 'Lax'
-        };
-
-        return res
-          .status(201)
-          .cookie("accessToken", accessToken, options)
-          .cookie("refreshToken", refreshToken, options)
-          .json(new ApiResponse(201, "User registered successfully", {
-            user: createdUser,
-            accessToken,
-            refreshToken
-          }));
-      }
+      // User already exists
+      throw new apiError(409, "User with this email already exists");
     }
 
-    // For completely new users (no existing record), they must verify email first
-    // Registration should only happen after email verification creates a temp user record
-    throw new apiError(400, "Please verify your email first before completing registration. No user record found for this email.");
+    // Check if username is already taken
+    const usernameExists = await User.findOne({
+      username: username.toLowerCase(),
+    });
+
+    if (usernameExists) {
+      throw new apiError(409, "Username is already taken");
+    }
+
+    // Set default address values (will be completed in profile later)
+    const userAddress = {
+      street: "To be updated",
+      city: "To be updated",
+      state: "To be updated",
+      pincode: "000000",
+      geolocation: {
+        lat: 0.0,
+        lng: 0.0,
+      },
+    };
+
+    // Create new user with provided information
+    const newUser = await User.create({
+      username: username.toLowerCase(),
+      email,
+      password, // Will be hashed by pre-save middleware
+      name: name || username, // Use provided name or username as default
+      fullname: fullname || username, // Use provided fullname or username as default
+      phone: phone || `temp_${Date.now()}`, // Use provided phone or temporary
+      address: userAddress,
+      avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=6366f1&color=ffffff&size=200`,
+      isEmailVerified: false, // Will be verified separately if needed
+    });
+
+    // Return user without password
+    const createdUser = await User.findById(newUser._id).select(
+      "-password -refresh_token"
+    );
+
+    return res
+      .status(201)
+      .cookie("accessToken", accessToken, options)
+      .cookie("refreshToken", refreshToken, options)
+      .json(
+        new ApiResponse(201, "User registered successfully", {
+          user: createdUser,
+          accessToken,
+          refreshToken,
+        })
+      );
   } catch (error) {
     console.error("Registration error:", error);
 
@@ -158,14 +125,17 @@ const sendEmailVerificationOTP = asynchandler(async (req, res) => {
 
   // If user exists and is already fully registered, they can't request new verification
   if (existingUser) {
-    const isFullyRegistered = 
-      existingUser.isEmailVerified && 
-      existingUser.password && 
+    const isFullyRegistered =
+      existingUser.isEmailVerified &&
+      existingUser.password &&
       !existingUser.password.startsWith("temp_password_") &&
       !existingUser.username.startsWith("temp_");
 
     if (isFullyRegistered) {
-      throw new apiError(409, "Email is already registered and verified. Please use login instead.");
+      throw new apiError(
+        409,
+        "Email is already registered and verified. Please use login instead."
+      );
     }
   }
 
