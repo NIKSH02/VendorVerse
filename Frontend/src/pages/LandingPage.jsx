@@ -21,6 +21,7 @@ export default function LandingPage() {
   const specialSectionRef = useRef(null);
   const requestSectionRef = useRef(null);
 
+  
   // Move this function above its first usage
   const handleCategoryClick = (category) => {
     let targetRef = null;
