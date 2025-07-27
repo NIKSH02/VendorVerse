@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import io from 'socket.io-client';
 import { useAuth } from '../hooks/useAuth';
 import { Navigate } from 'react-router-dom';
+import SideBar from '../components/SideBar';
 
 const LocationChat = () => {
   const { user, isAuthenticated } = useAuth();
@@ -37,7 +38,7 @@ const LocationChat = () => {
 
   // Initialize socket connection
   useEffect(() => {
-    const serverUrl ='http://localhost:5000';
+    const serverUrl ='https://cc5wnhxq-5001.inc1.devtunnels.ms';
     
     socketRef.current = io(serverUrl, {
       transports: ['websocket', 'polling'],
@@ -129,7 +130,7 @@ const LocationChat = () => {
     const loadChatHistory = async () => {
       try {
         setIsLoading(true);
-        const serverUrl = 'http://localhost:5000';
+        const serverUrl = 'https://cc5wnhxq-5001.inc1.devtunnels.ms';
         const response = await fetch(`${serverUrl}/api/messages/${encodeURIComponent(currentUser.location)}/recent`);
         
         if (response.ok) {
@@ -273,6 +274,7 @@ const LocationChat = () => {
 
   return (
     <div className="flex flex-col h-screen bg-gray-50">
+      <SideBar location={  user.address.city  } />
       {/* Header */}
       <header className="bg-white shadow-sm border-b px-4 py-3">
         <div className="flex items-center justify-between">

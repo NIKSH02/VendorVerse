@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React from "react";
 import { AuthProvider } from "./context/AuthContext";
 import AuthPage from "./pages/AuthPage";
 import CommunityRequests from "./pages/CommunityRequests";
@@ -13,96 +13,31 @@ import {
 import LandingPage from "./pages/LandingPage";
 import AllItemsPage from "./pages/AllItemsPage";
 import AboutPage from "./pages/AboutPage";
-// import SpecialItemsPage from "./pages/SpecialItemsPage";
-// import RawConnectDashboard from "./pages/RawConnectDashboard";
+// New modular dashboard components
+import Profile from "./pages/Profile";
+import MyListings from "./pages/MyListings";
+import AddProduct from "./pages/AddProduct";
+import EditProduct from "./pages/EditProduct";
+import OrdersToFulfill from "./pages/OrdersToFulfill";
+import OrdersPlaced from "./pages/OrdersPlaced";
+import Reviews from "./pages/Reviews";
+import Notifications from "./pages/Notifications";
 import { useAuth } from "./hooks/useAuth";
 import PersonalChatUI from "./pages/PersonalChatUi";
 
-// App Routes Component - Contains all the routing logic
-const AppRoutes = () => {
-  // Protected Route Component - Now properly inside the provider
-  const ProtectedRoute = ({ children }) => {
-    const authContext = useAuth();
-    const { isAuthenticated, isLoading, user } = authContext;
+// Protected Route Component
+const ProtectedRoute = ({ children }) => {
+  const { isAuthenticated, isLoading } = useAuth();
 
-    useEffect(() => {
-      console.log("ProtectedRoute authContext changed:", { 
-        isAuthenticated, 
-        isLoading, 
-        user: user ? 'USER_EXISTS' : 'NO_USER'
-      });
-    }, [isAuthenticated, isLoading, user]);
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-orange-500"></div>
+      </div>
+    );
+  }
 
-    console.log("ProtectedRoute render:", { 
-      isAuthenticated, 
-      isLoading, 
-      user: user ? 'USER_EXISTS' : 'NO_USER',
-      authContext: authContext ? 'CONTEXT_EXISTS' : 'NO_CONTEXT'
-    });
-
-    if (isLoading) {
-      console.log("ProtectedRoute: Showing loading spinner");
-      return (
-        <div className="min-h-screen flex items-center justify-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-orange-500"></div>
-        </div>
-      );
-    }
-
-    if (!isAuthenticated) {
-      console.log("ProtectedRoute: Redirecting to /authpage");
-      return <Navigate to="/authpage" replace />;
-    }
-
-    console.log("ProtectedRoute: Rendering protected content");
-    return children;
-  };
-
-  return (
-    <Router>
-      <Routes>
-        {/* Public Routes - No authentication required */}
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/about" element={<PersonalChatUI />} />
-        <Route path="/authpage" element={<AuthPage />} />
-        <Route path="/global" element={<CommunityRequests />} />
-        <Route path="/productdetail" element={<ProductDetail />} />
-        {/* Protected Routes - Authentication required */}
-        <Route
-          path="/locationchat"
-          element={
-            <ProtectedRoute>
-              <LocationChat />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/Global"
-          element={
-            <ProtectedRoute>
-              <CommunityRequests />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/productdetail"
-          element={
-            <ProtectedRoute>
-              <ProductDetail />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/all-items"
-          element={
-            <ProtectedRoute>
-              <AllItemsPage />
-            </ProtectedRoute>
-          }
-        />
-      </Routes>
-    </Router>
-  );
+  return isAuthenticated ? children : <Navigate to="/authpage" replace />;
 };
 
 // Simple Error Boundary Component
@@ -150,7 +85,128 @@ function App() {
   return (
     <ErrorBoundary>
       <AuthProvider>
-        <AppRoutes />
+        <Router>
+          <Routes>
+            {/* Public Routes - No authentication required */}
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/about" element={<AboutPage />} />
+            <Route path="/authpage" element={<AuthPage />} />
+            <Route path="/global" element={<CommunityRequests />} />
+            <Route path="/productdetail" element={<ProductDetail />} />
+            {/* Protected Routes - Authentication required */}
+            <Route
+              path="/Global"
+              element={
+                <ProtectedRoute>
+                  <CommunityRequests />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/locationchat"
+              element={
+                <ProtectedRoute>
+                  <LocationChat />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/productdetail"
+              element={
+                <ProtectedRoute>
+                  <ProductDetail />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/all-items"
+              element={
+                <ProtectedRoute>
+                  <AllItemsPage />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/Profile"
+              element={<Navigate to="/dashboard/profile" replace />}
+            />
+
+            {/* New Modular Dashboard Routes */}
+            <Route
+              path="/dashboard/profile"
+              element={
+                <ProtectedRoute>
+                  <Profile />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/listings"
+              element={
+                <ProtectedRoute>
+                  <MyListings />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/my-listings"
+              element={
+                <ProtectedRoute>
+                  <MyListings />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/add-product"
+              element={
+                <ProtectedRoute>
+                  <AddProduct />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/edit-product/:productId"
+              element={
+                <ProtectedRoute>
+                  <EditProduct />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/orders-to-fulfill"
+              element={
+                <ProtectedRoute>
+                  <OrdersToFulfill />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/orders-placed"
+              element={
+                <ProtectedRoute>
+                  <OrdersPlaced />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/reviews"
+              element={
+                <ProtectedRoute>
+                  <Reviews />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/notifications"
+              element={
+                <ProtectedRoute>
+                  <Notifications />
+                </ProtectedRoute>
+              }
+            />
+          </Routes>
+        </Router>
       </AuthProvider>
     </ErrorBoundary>
   );

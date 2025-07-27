@@ -1,6 +1,6 @@
 import { FaHome, FaUserPlus, FaInfoCircle, FaUserCircle } from "react-icons/fa";
 import React, { useState, useEffect } from "react";
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 
 
@@ -20,6 +20,7 @@ function Navbar() {
     window.location.reload();
   };
 
+  let navigate = useNavigate();
 
 
 
@@ -28,9 +29,9 @@ function Navbar() {
     <nav className="bg-white border-b border-gray-200 shadow-lg sticky top-0 z-20 transition-all duration-300">
       <div className="max-w-7xl mx-auto flex items-center justify-between px-4 md:px-8 py-4">
         {/* ... (rest of your existing navbar code) ... */}
-        <div className="flex items-center">
+        <div className="flex items-center" >
           <span className="text-orange-500 mr-2 text-2xl">🍛</span>
-          <span className="text-2xl font-bold text-gray-900 tracking-tight">StreetSupply</span>
+          <a className="text-2xl font-bold text-gray-900 tracking-tight" href="/" >StreetSupply</a>
         </div>
         <div className="flex items-center md:hidden">
 
@@ -58,7 +59,9 @@ function Navbar() {
             <FaUserCircle className="text-2xl" /> <span data-translate="true">Profile</span>
           </Link>
 
-          <button className="ml-0 md:ml-4 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-6 py-2 rounded-lg font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 w-full md:w-auto mt-2 md:mt-0">
+          <button
+          onClick={ () => navigate('/locationchat') }
+          className="ml-0 md:ml-4 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-6 py-2 rounded-lg font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 w-full md:w-auto mt-2 md:mt-0">
             <span data-translate="true">+ New Request</span>
           </button>
           {isLoggedIn ? (
