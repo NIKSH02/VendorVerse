@@ -50,6 +50,7 @@ const locationChatSocket = (io) => {
       try {
         const { userId, userName, location, coordinates } = data;
         
+		
         if (!userId || !userName || !location) {
           socket.emit('error', { message: 'Missing required fields: userId, userName, or location' });
           return;
