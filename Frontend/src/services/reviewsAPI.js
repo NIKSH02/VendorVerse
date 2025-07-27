@@ -1,0 +1,126 @@
+import apiClient from "../api/axios";
+
+// =============================================================================
+// REVIEWS API
+// =============================================================================
+export const reviewsAPI = {
+  // Submit review
+  submitReview: async (reviewData) => {
+    try {
+      const response = await apiClient.post("/reviews/submit", reviewData);
+      return response.data;
+    } catch (error) {
+      console.error("Error submitting review:", error);
+      throw error;
+    }
+  },
+
+  // Get user's reviews
+  getUserReviews: async (filters = {}) => {
+    try {
+      const response = await apiClient.get("/reviews/user", {
+        params: filters,
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching user reviews:", error);
+      throw error;
+    }
+  },
+
+  // Get received reviews (for sellers)
+  getReceivedReviews: async (filters = {}) => {
+    try {
+      const response = await apiClient.get("/reviews/received", {
+        params: filters,
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching received reviews:", error);
+      throw error;
+    }
+  },
+
+  // Get all reviews for a specific product/listing
+  getProductReviews: async (productId) => {
+    try {
+      const response = await apiClient.get(`/reviews/product/${productId}`);
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching product reviews:", error);
+      throw error;
+    }
+  },
+
+  // Get review by ID
+  getReviewById: async (reviewId) => {
+    try {
+      const response = await apiClient.get(`/reviews/${reviewId}`);
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching review:", error);
+      throw error;
+    }
+  },
+
+  // Update review
+  updateReview: async (reviewId, reviewData) => {
+    try {
+      const response = await apiClient.put(`/reviews/${reviewId}`, reviewData);
+      return response.data;
+    } catch (error) {
+      console.error("Error updating review:", error);
+      throw error;
+    }
+  },
+
+  // Delete review
+  deleteReview: async (reviewId) => {
+    try {
+      const response = await apiClient.delete(`/reviews/${reviewId}`);
+      return response.data;
+    } catch (error) {
+      console.error("Error deleting review:", error);
+      throw error;
+    }
+  },
+
+  // Get review statistics
+  getReviewStats: async (sellerId) => {
+    try {
+      const response = await apiClient.get(`/reviews/stats/${sellerId}`);
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching review statistics:", error);
+      throw error;
+    }
+  },
+
+  // Rate review (helpful/not helpful)
+  rateReview: async (reviewId, rating) => {
+    try {
+      const response = await apiClient.post(`/reviews/${reviewId}/rate`, {
+        rating,
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Error rating review:", error);
+      throw error;
+    }
+  },
+
+  // Get trending reviews
+  getTrendingReviews: async (filters = {}) => {
+    try {
+      const response = await apiClient.get("/reviews/trending", {
+        params: filters,
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching trending reviews:", error);
+      throw error;
+    }
+  },
+};
+
+export default reviewsAPI;
