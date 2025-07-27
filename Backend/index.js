@@ -22,7 +22,7 @@ const server = http.createServer(app);
 // Socket.io setup with CORS
 const io = socketIo(server, {
   cors: {
-    origin: process.env.FRONTEND_URL || "http://localhost:3000",
+    origin: ["http://localhost:5173", "http://localhost:5174", "https://cc5wnhxq-5001.inc1.devtunnels.ms", "https://cc5wnhxq-5173.inc1.devtunnels.ms"],
     methods: ["GET", "POST"],
     credentials: true
   },
@@ -31,8 +31,9 @@ const io = socketIo(server, {
 
 // CORS configuration
 app.use(Cors({
-    origin: ['http://localhost:5173', 'http://localhost:3000', 'http://localhost:5001'],
-    credentials: true
+    origin: ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:5001', 'https://cc5wnhxq-5001.inc1.devtunnels.ms', "https://cc5wnhxq-5173.inc1.devtunnels.ms"],
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
 }));
 
 // Middleware to parse JSON
@@ -42,8 +43,8 @@ app.use(express.static('public')); // This is a built-in middleware function in 
 
 // Rate limiting
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
+  windowMs: 150000 * 60 * 1000, // 15 minutes
+  max: 1000000, // limit each IP to 100 requests per windowMs
   message: {
     success: false,
     message: 'Too many requests from this IP, please try again later.'
@@ -88,9 +89,8 @@ const groupchatroute = require('./src/routes/groupchat.route.js')
 
 // chat route 
 app.use('/api/', limiter);
-app.use('/api/messages/', messageLimiter);
-
-app.use('/api/messages/:location', groupchatroute)
+app.use('/api/messages', messageLimiter);
+app.use('/api/messages', groupchatroute);
 
 // Define routes
 app.use('/api/users', userRouter);    // Mount the user router at the correct endpoint
