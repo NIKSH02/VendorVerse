@@ -14,7 +14,10 @@ import Navbar from "../components/Navbar";
 
 
 export default function LandingPage() {
-  const [locationSet, setLocationSet] = useState(false);
+  // Show popup only once per website open (per tab/session)
+  const [locationSet, setLocationSet] = useState(() => {
+    return sessionStorage.getItem('locationSet') === 'true';
+  });
 
   const [activeSection, setActiveSection] = useState(null);
   const rawSectionRef = useRef(null);
@@ -35,6 +38,7 @@ export default function LandingPage() {
 
   const handleLocationSet = (location) => {
     setLocationSet(true);
+    sessionStorage.setItem('locationSet', 'true');
     // Optionally store location in context or localStorage
   };
 

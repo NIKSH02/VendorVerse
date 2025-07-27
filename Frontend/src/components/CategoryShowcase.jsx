@@ -11,6 +11,7 @@ const CategoryShowcase = () => {
   const headingText = "welcome to street supply.";
   const [displayedText, setDisplayedText] = useState('');
   const [index, setIndex] = useState(0);
+  // Show only the category cards on initial load
   const [activeSection, setActiveSection] = useState('');
   // Refs for each section
   const rawRef = React.useRef(null);
@@ -47,25 +48,29 @@ const CategoryShowcase = () => {
       title: "Raw Materials",
       icon: Package,
       description: "Source the freshest ingredients for your street food creations.",
-      section: "raw"
+      section: "raw",
+      onExplore: () => setActiveSection('raw')
     },
     {
       title: "Recent Requests",
       icon: ClipboardList,
       description: "See the latest demands from the street food community.",
-      section: "request"
+      section: "request",
+      onExplore: () => setActiveSection('request')
     },
     {
       title: "Special Items",
       icon: Utensils,
       description: "Discover unique and hard-to-find ingredients like boiled aloo vada masala.",
-      section: "special"
+      section: "special",
+      onExplore: () => setActiveSection('special')
     },
     {
       title: "Become a Vendor AI",
       icon: Bot,
       description: "Leverage AI to optimize your street food business operations.",
-      section: "hero"
+      section: "hero",
+      onExplore: () => setActiveSection('hero')
     },
   ];
 
@@ -77,10 +82,10 @@ const CategoryShowcase = () => {
             <AnimatePresence>
               <motion.div
                 key="raw-section"
-                initial={{ opacity: 0, scale: 0.7, rotate: -10, y: 100 }}
-                animate={{ opacity: 1, scale: 1, rotate: 0, y: 0 }}
-                exit={{ opacity: 0, scale: 0.7, rotate: 10, y: 100 }}
-                transition={{ type: 'spring', stiffness: 120, damping: 14, duration: 0.7 }}
+                initial={{ opacity: 0, y: 40 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 40 }}
+                transition={{ duration: 0.7, ease: 'easeOut' }}
               >
                 <RawItemSection />
               </motion.div>
@@ -142,23 +147,41 @@ const CategoryShowcase = () => {
           </span>
         </div>
       </div>
-      <motion.div
-        className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-7 w-full max-w-5xl"
-        initial={{ opacity: 0, scale: 0.95, y: 60 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        transition={{ type: 'spring', duration: 0.8, bounce: 0.25 }}
-      >
-        {cardsData.map((card, idx) => (
-          <Card
-            key={idx}
-            title={card.title}
-            icon={card.icon}
-            description={card.description}
-            onExplore={() => setActiveSection(card.section)}
-          />
-        ))}
-      </motion.div>
-      {renderSection()}
+      {/* Responsive: show cards on desktop, dropdown on mobile */}
+      <div className="w-full">
+        <div className="hidden sm:block">
+          <motion.div
+            className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-7 w-full max-w-5xl mx-auto"
+            initial={{ opacity: 0, scale: 0.95, y: 60 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            transition={{ type: 'spring', duration: 0.8, bounce: 0.25 }}
+          >
+            {cardsData.map((card, idx) => (
+              <Card
+                key={idx}
+                title={card.title}
+                icon={card.icon}
+                description={card.description}
+                onExplore={card.onExplore}
+              />
+            ))}
+          </motion.div>
+        </div>
+        {/* Mobile dropdown */}
+        <div className="block sm:hidden w-full px-2 mb-6">
+          <select
+            className="w-full min-w-0 p-6 rounded-xl border border-orange-200 focus:border-orange-500 focus:ring-2 focus:ring-orange-100 bg-white text-base shadow placeholder-gray-400 transition-all duration-200"
+            value={activeSection}
+            onChange={e => setActiveSection(e.target.value)}
+          >
+            <option value="" disabled>Select a section...</option>
+            {cardsData.map(card => (
+              <option key={card.section} value={card.section}>{card.title}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+      {activeSection && renderSection()}
       <style>
         {`
         @keyframes blink {

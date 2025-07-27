@@ -369,16 +369,16 @@ export default function AuthForm({ isLogin = true, onToggle, onSuccess }) {
         {isLogin ? "Sign in" : "Sign up"}
       </button>
 
-		<p className="text-center mt-4 text-sm text-gray-600">
-		{isLogin ? "Don't have an account?" : "Already have an account?"}{" "}
-		<button
-			onClick={handleToggleAuth}
-			className="text-orange-600 hover:text-orange-800 font-medium hover:underline disabled:text-gray-400 disabled:cursor-not-allowed"
-			disabled={isVerifyingOtp || (registrationInProgress && emailVerificationSent && !isEmailVerified)}
-		>
-			{isLogin ? "Sign up" : "Sign in"}
-		</button>
-		</p>
+    <p className="text-center mt-4 text-sm text-gray-600">
+    {isLogin ? "Don't have an account?" : "Already have an account?"}{" "}
+    <button
+      onClick={handleToggleAuth}
+      className="text-orange-600 hover:text-orange-800 font-medium hover:underline disabled:text-gray-400 disabled:cursor-not-allowed"
+      disabled={isVerifyingOtp || (registrationInProgress && emailVerificationSent && !isEmailVerified)}
+    >
+      {isLogin ? "Sign up" : "Sign in"}
+    </button>
+    </p>
     </div>
   );
 }

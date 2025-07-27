@@ -5,7 +5,7 @@ const uploadOnCloudinary = require("../utils/cloudinary");
 // Create a new product listing
 const createProduct = async (req, res) => {
   try {
-    const {
+    let {
       itemName,
       quantityAvailable,
       unit,
@@ -17,6 +17,21 @@ const createProduct = async (req, res) => {
       category,
       description,
     } = req.body;
+
+    // Parse location if sent as JSON string
+    if (typeof location === 'string') {
+      try {
+        location = JSON.parse(location);
+      } catch (e) {
+        location = {};
+      }
+    }
+
+    // Debug: log incoming body and files for troubleshooting
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('REQ.BODY:', req.body);
+      console.log('REQ.FILES:', req.files);
+    }
 
     // Check if user exists and is a supplier
     const currentUserId = req.user._id || req.user.id;

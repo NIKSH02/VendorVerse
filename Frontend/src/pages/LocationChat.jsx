@@ -37,7 +37,7 @@ const LocationChat = () => {
 
   // Initialize socket connection
   useEffect(() => {
-    const serverUrl ='https://cc5wnhxq-5001.inc1.devtunnels.ms';
+    const serverUrl ='http://localhost:5000';
     
     socketRef.current = io(serverUrl, {
       transports: ['websocket', 'polling'],
@@ -129,7 +129,7 @@ const LocationChat = () => {
     const loadChatHistory = async () => {
       try {
         setIsLoading(true);
-        const serverUrl = 'https://cc5wnhxq-5001.inc1.devtunnels.ms';
+        const serverUrl = 'http://localhost:5000';
         const response = await fetch(`${serverUrl}/api/messages/${encodeURIComponent(currentUser.location)}/recent`);
         
         if (response.ok) {
