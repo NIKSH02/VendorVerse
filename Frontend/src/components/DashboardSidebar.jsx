@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate, useLocation } from "react-router-dom";
+import useAuth from "../hooks/useAuth";
 import {
   User,
   Package,
@@ -24,6 +25,7 @@ const fadeInUp = {
 const DashboardSidebar = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user, logout } = useAuth();
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   const navigationItems = [
@@ -73,9 +75,15 @@ const DashboardSidebar = () => {
 
   const isActive = (path) => location.pathname === path;
 
-  const handleLogout = () => {
-    // Add logout logic here
-    navigate("/auth");
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate("/auth");
+    } catch (error) {
+      console.error("Logout error:", error);
+      // Even if logout fails, navigate to auth page
+      navigate("/auth");
+    }
   };
 
   return (
@@ -183,8 +191,28 @@ const DashboardSidebar = () => {
           {/* User Info & Logout */}
           <div className="p-4 border-t border-gray-200">
             <div className="mb-4 p-3 bg-gray-50 rounded-lg">
-              <p className="text-sm font-medium text-gray-800">Welcome User</p>
-              <p className="text-xs text-gray-500">user@example.com</p>
+              <p className="text-sm font-medium text-gray-800">
+                Welcome {user?.name || user?.username || "User"}
+              </p>
+              <p className="text-xs text-gray-500">
+                {user?.email || "user@example.com"}
+              </p>
+              {user && user.isProfileComplete === true && (
+                <p className="text-xs text-green-600 mt-1">
+                  ✅ Profile completed
+                </p>
+              )}
+              {user && user.isProfileComplete === false && (
+                <p className="text-xs text-amber-600 mt-1">
+                  ⚠️ Please complete your profile
+                </p>
+              )}
+              {/* Debug info - remove this after testing */}
+              {user && (
+                <p className="text-xs text-gray-400 mt-1">
+                  Profile Status: {String(user.isProfileComplete)}
+                </p>
+              )}
             </div>
             <motion.button
               onClick={handleLogout}

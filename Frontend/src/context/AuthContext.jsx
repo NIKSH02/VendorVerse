@@ -26,20 +26,27 @@ export const AuthProvider = ({ children }) => {
           console.log("AuthContext: Found token and saved user, verifying...");
           const response = await authAPI.getCurrentUser();
           console.log("AuthContext: Server verification successful");
-          
-          setUser(response.data);
+
+          // Backend returns: { status, data: user, message, success }
+          const currentUser = response.data || response; // Handle both possible structures
+          setUser(currentUser);
           setIsAuthenticated(true);
-          localStorage.setItem("user", JSON.stringify(response.data));
+          localStorage.setItem("user", JSON.stringify(currentUser));
         } catch (error) {
           console.log("AuthContext: Server verification failed:", error);
-          
+
           // Only logout if it's definitely an auth error (401/403)
-          if (error.response?.status === 401 || error.response?.status === 403) {
+          if (
+            error.response?.status === 401 ||
+            error.response?.status === 403
+          ) {
             console.log("AuthContext: Invalid token, clearing auth");
             clearAuth();
           } else {
             // For network errors, restore from localStorage
-            console.log("AuthContext: Network error, restoring from localStorage");
+            console.log(
+              "AuthContext: Network error, restoring from localStorage"
+            );
             try {
               const parsedUser = JSON.parse(savedUser);
               setUser(parsedUser);
@@ -55,7 +62,7 @@ export const AuthProvider = ({ children }) => {
       } else {
         console.log("AuthContext: No token or saved user found");
       }
-      
+
       setIsLoading(false);
       console.log("AuthContext: Initialization complete");
     };
@@ -82,7 +89,7 @@ export const AuthProvider = ({ children }) => {
     setUser(userData);
     setIsAuthenticated(true);
     setError(null);
-    
+
     if (token) {
       localStorage.setItem("accessToken", token);
     }
@@ -98,7 +105,8 @@ export const AuthProvider = ({ children }) => {
       setEmailVerificationSent(true);
       return response;
     } catch (error) {
-      const errorMessage = error.response?.data?.message || "Failed to send verification OTP";
+      const errorMessage =
+        error.response?.data?.message || "Failed to send verification OTP";
       setError(errorMessage);
       throw error;
     } finally {
@@ -106,15 +114,37 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const verifyEmailOTP = async (email, otp) => {
+  const verifyEmailOTP = async (verificationData) => {
     try {
       setIsVerifyingOtp(true);
       setError(null);
-      const response = await authAPI.verifyEmailOTP(email, otp);
-      setIsEmailVerified(true);
+
+      // verificationData now contains: { email, otp, username, password, name, fullname }
+      const response = await authAPI.verifyEmailOTP(verificationData);
+
+      // Since verification now includes registration, handle user login
+      // Backend returns: { status, data: { user, accessToken, refreshToken }, message, success }
+      const responseData = response.data || response; // Handle both possible structures
+      if (responseData && responseData.user) {
+        setUser(responseData.user);
+        setIsAuthenticated(true); // Fixed: was setIsLoggedIn(true)
+        setIsEmailVerified(true);
+
+        // Store tokens if provided
+        if (responseData.accessToken) {
+          localStorage.setItem("accessToken", responseData.accessToken);
+        }
+
+        console.log(
+          "User verified and registered successfully:",
+          responseData.user
+        );
+      }
+
       return response;
     } catch (error) {
-      const errorMessage = error.response?.data?.message || "Invalid or expired OTP";
+      const errorMessage =
+        error.response?.data?.message || "Invalid or expired OTP";
       setError(errorMessage);
       throw error;
     } finally {
@@ -129,7 +159,8 @@ export const AuthProvider = ({ children }) => {
       const response = await authAPI.resendVerificationOTP(email, username);
       return response;
     } catch (error) {
-      const errorMessage = error.response?.data?.message || "Failed to resend OTP";
+      const errorMessage =
+        error.response?.data?.message || "Failed to resend OTP";
       setError(errorMessage);
       throw error;
     } finally {
@@ -143,17 +174,19 @@ export const AuthProvider = ({ children }) => {
       setIsLoading(true);
       setError(null);
       const response = await authAPI.register(userData);
-      
+
       // Handle the response
-      if (response.data && response.data.user) {
-        setAuthenticatedUser(response.data.user, response.data.accessToken);
+      const responseData = response.data || response; // Handle both possible structures
+      if (responseData && responseData.user) {
+        setAuthenticatedUser(responseData.user, responseData.accessToken);
       } else {
-        setAuthenticatedUser(response.data);
+        setAuthenticatedUser(responseData);
       }
 
       return response;
     } catch (error) {
-      const errorMessage = error.response?.data?.message || "Registration failed";
+      const errorMessage =
+        error.response?.data?.message || "Registration failed";
       setError(errorMessage);
       throw error;
     } finally {
@@ -166,8 +199,14 @@ export const AuthProvider = ({ children }) => {
     try {
       setIsLoading(true);
       setError(null);
-      const response = await authAPI.loginWithPassword(emailOrUsername, password);
-      setAuthenticatedUser(response.data.user, response.data.accessToken);
+      const response = await authAPI.loginWithPassword(
+        emailOrUsername,
+        password
+      );
+      // Backend returns: { status, data: { accessToken, user }, message, success }
+      // So we need to access response.data.data instead of response.data
+      const { user, accessToken } = response.data || response; // Handle both possible structures
+      setAuthenticatedUser(user, accessToken);
       return response;
     } catch (error) {
       const errorMessage = error.response?.data?.message || "Login failed";
@@ -200,11 +239,14 @@ export const AuthProvider = ({ children }) => {
       setIsLoading(true);
       setError(null);
       const response = await authAPI.updateAccountDetails(userData);
-      setUser(response.data);
-      localStorage.setItem("user", JSON.stringify(response.data));
+      // Backend returns: { status, data: user, message, success }
+      const updatedUser = response.data || response; // Handle both possible structures
+      setUser(updatedUser);
+      localStorage.setItem("user", JSON.stringify(updatedUser));
       return response;
     } catch (error) {
-      const errorMessage = error.response?.data?.message || "Failed to update account details";
+      const errorMessage =
+        error.response?.data?.message || "Failed to update account details";
       setError(errorMessage);
       throw error;
     } finally {
@@ -220,7 +262,8 @@ export const AuthProvider = ({ children }) => {
       const response = await authAPI.changePassword(oldPassword, newPassword);
       return response;
     } catch (error) {
-      const errorMessage = error.response?.data?.message || "Failed to change password";
+      const errorMessage =
+        error.response?.data?.message || "Failed to change password";
       setError(errorMessage);
       throw error;
     } finally {
@@ -233,8 +276,8 @@ export const AuthProvider = ({ children }) => {
     console.log("AuthContext State Changed:", {
       isAuthenticated,
       isLoading,
-      user: user ? 'USER_EXISTS' : 'NO_USER',
-      error: error ? 'ERROR_EXISTS' : 'NO_ERROR'
+      user: user ? "USER_EXISTS" : "NO_USER",
+      error: error ? "ERROR_EXISTS" : "NO_ERROR",
     });
   }, [isAuthenticated, isLoading, user, error]);
 
