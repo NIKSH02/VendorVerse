@@ -70,16 +70,8 @@ const OrderSchema = new mongoose.Schema(
     },
     // Product snapshot at time of order for history preservation
     productSnapshot: {
-      itemName: String,
-      imageUrl: String,
-      category: String,
-      type: String,
-      description: String,
-      sellerLocation: {
-        lat: Number,
-        lng: Number,
-        address: String,
-      },
+      type: mongoose.Schema.Types.Mixed,
+      default: {},
     },
     isReviewable: {
       type: Boolean,

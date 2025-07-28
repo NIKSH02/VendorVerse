@@ -6,6 +6,7 @@ import toast, { Toaster } from "react-hot-toast";
 import { profileAPI } from "../services/api";
 import DashboardLayout from "../layouts/DashboardLayout";
 import { TrendingUp, TrendingDown, DollarSign } from "lucide-react";
+import { useOrders } from "../context/OrderContext";
 
 const fadeInUp = {
   initial: { opacity: 0, y: 20 },
@@ -19,19 +20,12 @@ const staggerContainer = {
 
 const Profile = () => {
   const navigate = useNavigate();
+  const { financialSummary } = useOrders();
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editFormData, setEditFormData] = useState({});
-
-  const [financialData, setFinancialData] = useState({
-    totalRevenue: 0,
-    totalExpenditure: 0,
-    netBalance: 0,
-    salesCount: 0,
-    orderCount: 0,
-  });
 
   const [profileData, setProfileData] = useState(null);
 
@@ -78,15 +72,6 @@ const Profile = () => {
         }
 
         setProfileData(completeProfile);
-
-        setFinancialData({
-          totalRevenue: statistics.totalRevenue || 0,
-          totalExpenditure: statistics.totalExpenditure || 0,
-          netBalance:
-            (statistics.totalRevenue || 0) - (statistics.totalExpenditure || 0),
-          salesCount: statistics.completedOrdersAsSeller || 0,
-          orderCount: statistics.totalOrdersAsBuyer || 0,
-        });
       } else {
         setError("Failed to load profile data.");
       }
@@ -345,9 +330,9 @@ const Profile = () => {
           >
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-green-100 text-sm">Total Sales Revenue</p>
+                <p className="text-green-100 text-sm">Total Revenue</p>
                 <p className="text-2xl font-bold">
-                  ₹{financialData.totalRevenue.toLocaleString()}
+                  ₹{(financialSummary.totalRevenue || 0).toLocaleString()}
                 </p>
               </div>
               <TrendingUp size={32} className="text-green-200" />
@@ -366,7 +351,7 @@ const Profile = () => {
               <div>
                 <p className="text-blue-100 text-sm">Total Expenditure</p>
                 <p className="text-2xl font-bold">
-                  ₹{financialData.totalExpenditure.toLocaleString()}
+                  ₹{(financialSummary.totalExpenditure || 0).toLocaleString()}
                 </p>
               </div>
               <TrendingDown size={32} className="text-blue-200" />
@@ -387,7 +372,8 @@ const Profile = () => {
                 <p className="text-2xl font-bold">
                   ₹
                   {(
-                    financialData.totalRevenue - financialData.totalExpenditure
+                    (financialSummary.totalRevenue || 0) -
+                    (financialSummary.totalExpenditure || 0)
                   ).toLocaleString()}
                 </p>
               </div>

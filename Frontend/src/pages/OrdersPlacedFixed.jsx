@@ -54,7 +54,7 @@ const OrdersPlaced = () => {
   useEffect(() => {
     fetchBuyerOrders();
     fetchReviewableOrders();
-  }, []); // Empty dependency array to avoid infinite requests
+  }, [fetchBuyerOrders, fetchReviewableOrders]);
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -267,25 +267,28 @@ const OrdersPlaced = () => {
                     </div>
                   </div>
 
-                  {/* Exchange Code Display - now available at any status */}
-                  <div className="mb-4 p-3 bg-purple-50 rounded-lg">
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm text-purple-700">
-                        <strong>Exchange Code Available</strong>
+                  {/* Exchange Code Display */}
+                  {(order.status === "processing" ||
+                    order.status === "shipped") && (
+                    <div className="mb-4 p-3 bg-purple-50 rounded-lg">
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm text-purple-700">
+                          <strong>Exchange Code Available</strong>
+                        </p>
+                        <motion.button
+                          className="text-purple-600 hover:text-purple-800 text-sm font-medium"
+                          onClick={() => handleGetExchangeCode(order)}
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                        >
+                          View Code
+                        </motion.button>
+                      </div>
+                      <p className="text-xs text-purple-500 mt-1">
+                        Share this code with seller upon delivery/pickup
                       </p>
-                      <motion.button
-                        className="text-purple-600 hover:text-purple-800 text-sm font-medium"
-                        onClick={() => handleGetExchangeCode(order)}
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                      >
-                        View Code
-                      </motion.button>
                     </div>
-                    <p className="text-xs text-purple-500 mt-1">
-                      Share this code with seller upon delivery/pickup
-                    </p>
-                  </div>
+                  )}
 
                   <div className="flex justify-between items-center">
                     <p className="text-sm text-gray-500">

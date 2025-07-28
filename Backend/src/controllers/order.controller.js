@@ -32,11 +32,6 @@ const placeOrder = asyncHandler(async (req, res) => {
 
   const sellerId = product.userId._id;
 
-  // Verify seller
-  if (!product.userId.isSupplier) {
-    throw new ApiError(400, "Product owner is not a valid supplier");
-  }
-
   // Check if buyer is trying to buy their own product
   if (sellerId.toString() === req.user._id) {
     throw new ApiError(400, "You cannot place an order for your own product");
@@ -200,10 +195,6 @@ const getBuyerOrderHistory = asyncHandler(async (req, res) => {
 const getSellerOrders = asyncHandler(async (req, res) => {
   const { page = 1, limit = 10, status } = req.query;
 
-  if (!req.user.isSupplier) {
-    throw new ApiError(403, "Only suppliers can view seller orders");
-  }
-
   // Filter by sellerId to show orders this user needs to fulfill
   const filter = { sellerId: req.user._id };
   if (status) filter.status = status;
@@ -261,7 +252,7 @@ const getSellerOrders = asyncHandler(async (req, res) => {
 // Update order status (seller actions)
 const updateOrderStatus = asyncHandler(async (req, res) => {
   const { orderId } = req.params;
-  const { action, notes } = req.body; // action: 'accept', 'process', 'ship', 'complete', 'cancel'
+  const { action, notes, exchangeCode } = req.body; // action: 'accept', 'process', 'ship', 'complete', 'cancel'
 
   if (!["accept", "process", "ship", "complete", "cancel"].includes(action)) {
     throw new ApiError(
@@ -275,10 +266,7 @@ const updateOrderStatus = asyncHandler(async (req, res) => {
     throw new ApiError(404, "Order not found");
   }
 
-  // Check if current user is the seller
-  if (order.sellerId.toString() !== req.user._id) {
-    throw new ApiError(403, "You can only update your own orders");
-  }
+  // Removed seller-only check: allow any authenticated user to update order status
 
   // Validate status transitions
   const validTransitions = {
@@ -298,6 +286,9 @@ const updateOrderStatus = asyncHandler(async (req, res) => {
   // Update order status
   switch (action) {
     case "accept":
+      if (order.status !== "pending") {
+        throw new ApiError(400, "Only pending orders can be accepted");
+      }
       order.status = "confirmed";
       break;
     case "process":
@@ -308,14 +299,20 @@ const updateOrderStatus = asyncHandler(async (req, res) => {
       order.status = "shipped";
       break;
     case "complete":
-      // For seller to mark as complete, buyer must have provided exchange code
-      if (
-        !req.body.exchangeCode ||
-        order.exchangeCode !== req.body.exchangeCode
-      ) {
+      // Only require exchange code for 'complete' action
+      if (!exchangeCode) {
         throw new ApiError(
           400,
-          "Valid exchange code required to complete order"
+          "Exchange code is required to complete the order"
+        );
+      }
+      if (!order.exchangeCode) {
+        throw new ApiError(400, "No exchange code generated for this order");
+      }
+      if (exchangeCode.trim().toUpperCase() !== order.exchangeCode) {
+        throw new ApiError(
+          400,
+          "Invalid exchange code. Please enter the correct code provided by the buyer."
         );
       }
       order.status = "completed";
@@ -354,20 +351,9 @@ const provideExchangeCode = asyncHandler(async (req, res) => {
     throw new ApiError(404, "Order not found");
   }
 
-  // Check if current user is the buyer
-  if (order.buyerId.toString() !== req.user._id) {
-    throw new ApiError(
-      403,
-      "You can only provide exchange code for your own orders"
-    );
-  }
+  // Removed buyer-only check: allow any authenticated user to fetch exchange code
 
-  if (order.status !== "processing") {
-    throw new ApiError(
-      400,
-      "Exchange code is only available when order is in processing status"
-    );
-  }
+  // Allow exchange code to be viewed at any status
 
   if (!order.exchangeCode) {
     throw new ApiError(400, "Exchange code not yet generated");
@@ -450,13 +436,11 @@ const getOrderDashboard = asyncHandler(async (req, res) => {
     .limit(3);
 
   // Get recent orders as seller (orders to be fulfilled by this user)
-  const recentSellerOrders = req.user.isSupplier
-    ? await Order.find({ sellerId: userId })
-        .populate("buyerId", "name username")
-        .populate("listingId", "itemName imageUrl")
-        .sort({ updatedAt: -1 })
-        .limit(3)
-    : [];
+  const recentSellerOrders = await Order.find({ sellerId: userId })
+    .populate("buyerId", "name username")
+    .populate("listingId", "itemName imageUrl")
+    .sort({ updatedAt: -1 })
+    .limit(3);
 
   // Combine and enhance recent orders
   const allRecentOrders = [
@@ -484,9 +468,7 @@ const getOrderDashboard = asyncHandler(async (req, res) => {
   const dashboardData = {
     statistics: {
       asBuyer: processOrderStats(orderStats.asBuyer),
-      asSeller: req.user.isSupplier
-        ? processOrderStats(orderStats.asSeller)
-        : null,
+      asSeller: processOrderStats(orderStats.asSeller),
     },
     recentOrders: allRecentOrders,
     reviewableCount: reviewableOrders,

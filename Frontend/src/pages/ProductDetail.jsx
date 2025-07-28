@@ -21,16 +21,29 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";
+import { useOrders } from "../context/OrderContext";
+import { useAuth } from "../context/AuthContext";
 
 const ProductDetailPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [showFullReviews, setShowFullReviews] = useState(false);
-  const [selectedQuantity, setSelectedQuantity] = useState(1);
+  const { user } = useAuth();
+  const { placeOrder, loading } = useOrders();
 
   // Get product data from navigation state
   const product = location.state?.item;
+
+  // Set initial delivery type based on availability
+  const initialDeliveryType = product?.deliveryAvailable
+    ? "delivery"
+    : "pickup";
+
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [showFullReviews, setShowFullReviews] = useState(false);
+  const [selectedQuantity, setSelectedQuantity] = useState(1);
+  const [deliveryType, setDeliveryType] = useState(initialDeliveryType);
+  const [deliveryAddress, setDeliveryAddress] = useState("");
+  const [orderNotes, setOrderNotes] = useState("");
 
   // Redirect if no product data
   useEffect(() => {
@@ -89,11 +102,12 @@ const ProductDetailPage = () => {
   const totalPriceWithDelivery =
     product.pricePerUnit + (product.deliveryFee || 0);
 
-  // Calculate order total based on selected quantity
+  // Calculate order total based on selected quantity and delivery type
   const orderSubtotal = product.pricePerUnit * selectedQuantity;
-  const orderDeliveryFee = product.deliveryAvailable
-    ? product.deliveryFee || 0
-    : 0;
+  const orderDeliveryFee =
+    deliveryType === "delivery" && product.deliveryAvailable
+      ? product.deliveryFee || 0
+      : 0;
   const orderTotal = orderSubtotal + orderDeliveryFee;
 
   // Generate preset quantity options based on product unit and available stock
@@ -165,10 +179,68 @@ const ProductDetailPage = () => {
     );
   };
 
-  const handlePlaceOrder = () => {
-    toast.success(
-      `Order placed for ${selectedQuantity} ${product.unit} - Total: ₹${orderTotal}!`
-    );
+  const handlePlaceOrder = async () => {
+    console.log("🛒 Place Order clicked!");
+    console.log("User:", user);
+    console.log("Product:", product);
+    console.log("Selected Quantity:", selectedQuantity);
+    console.log("Delivery Type:", deliveryType);
+    console.log("Delivery Address:", deliveryAddress);
+
+    try {
+      // Validation
+      if (!user) {
+        console.log("❌ No user found");
+        toast.error("Please login to place an order");
+        navigate("/login");
+        return;
+      }
+
+      if (selectedQuantity <= 0) {
+        console.log("❌ Invalid quantity");
+        toast.error("Please select a valid quantity");
+        return;
+      }
+
+      if (selectedQuantity > (product.quantityAvailable || 0)) {
+        console.log("❌ Quantity exceeds stock");
+        toast.error("Selected quantity exceeds available stock");
+        return;
+      }
+
+      if (deliveryType === "delivery" && !deliveryAddress.trim()) {
+        console.log("❌ No delivery address");
+        toast.error("Please provide delivery address");
+        return;
+      }
+
+      // Prepare order data
+      const orderData = {
+        productId: product._id,
+        quantity: selectedQuantity,
+        deliveryType,
+        deliveryAddress:
+          deliveryType === "delivery" ? deliveryAddress : undefined,
+        pickupAddress:
+          deliveryType === "pickup" ? product.location?.address : undefined,
+        notes:
+          orderNotes ||
+          `Order for ${selectedQuantity} ${product.unit} of ${product.itemName}`,
+      };
+
+      console.log("📦 Order Data:", orderData);
+
+      // Place the order
+      console.log("🚀 Calling placeOrder...");
+      await placeOrder(orderData);
+
+      console.log("✅ Order placed successfully!");
+      // Navigate to orders page
+      navigate("/dashboard/orders-placed");
+    } catch (error) {
+      console.error("❌ Error placing order:", error);
+      // Error toast is handled in OrderContext
+    }
   };
 
   const handleNegotiate = () => {
@@ -350,6 +422,85 @@ const ProductDetailPage = () => {
                     </div>
                   </div>
 
+                  {/* Delivery Options */}
+                  <div className="mb-6">
+                    <h4 className="font-semibold text-gray-900 mb-3">
+                      Delivery Options
+                    </h4>
+                    <div className="space-y-3">
+                      {product.deliveryAvailable && (
+                        <label className="flex items-center space-x-3 p-3 border rounded-lg cursor-pointer hover:bg-orange-50 transition-colors">
+                          <input
+                            type="radio"
+                            name="deliveryType"
+                            value="delivery"
+                            checked={deliveryType === "delivery"}
+                            onChange={(e) => setDeliveryType(e.target.value)}
+                            className="text-orange-600 focus:ring-orange-500"
+                          />
+                          <div className="flex-1">
+                            <div className="font-medium text-gray-900">
+                              Home Delivery
+                            </div>
+                            <div className="text-sm text-gray-600">
+                              Delivered to your address (₹
+                              {product.deliveryFee || 0} fee)
+                            </div>
+                          </div>
+                        </label>
+                      )}
+
+                      <label className="flex items-center space-x-3 p-3 border rounded-lg cursor-pointer hover:bg-orange-50 transition-colors">
+                        <input
+                          type="radio"
+                          name="deliveryType"
+                          value="pickup"
+                          checked={deliveryType === "pickup"}
+                          onChange={(e) => setDeliveryType(e.target.value)}
+                          className="text-orange-600 focus:ring-orange-500"
+                        />
+                        <div className="flex-1">
+                          <div className="font-medium text-gray-900">
+                            Self Pickup
+                          </div>
+                          <div className="text-sm text-gray-600">
+                            Pick up from seller's location (No delivery fee)
+                          </div>
+                        </div>
+                      </label>
+                    </div>
+
+                    {/* Delivery Address Input */}
+                    {deliveryType === "delivery" && (
+                      <div className="mt-4">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Delivery Address
+                        </label>
+                        <textarea
+                          value={deliveryAddress}
+                          onChange={(e) => setDeliveryAddress(e.target.value)}
+                          rows={3}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 resize-none"
+                          placeholder="Enter your complete delivery address..."
+                        />
+                      </div>
+                    )}
+
+                    {/* Order Notes */}
+                    <div className="mt-4">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Order Notes (Optional)
+                      </label>
+                      <textarea
+                        value={orderNotes}
+                        onChange={(e) => setOrderNotes(e.target.value)}
+                        rows={2}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 resize-none"
+                        placeholder="Any special instructions..."
+                      />
+                    </div>
+                  </div>
+
                   {/* Order Summary */}
                   <div className="bg-white rounded-lg p-4 border border-orange-200">
                     <h4 className="font-semibold text-gray-900 mb-3">
@@ -364,14 +515,16 @@ const ProductDetailPage = () => {
                         <span className="font-semibold">₹{orderSubtotal}</span>
                       </div>
 
-                      {product.deliveryAvailable && (
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Delivery Fee</span>
-                          <span className="font-semibold">
-                            ₹{orderDeliveryFee}
-                          </span>
-                        </div>
-                      )}
+                      {deliveryType === "delivery" &&
+                        product.deliveryAvailable &&
+                        orderDeliveryFee > 0 && (
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">Delivery Fee</span>
+                            <span className="font-semibold">
+                              ₹{orderDeliveryFee}
+                            </span>
+                          </div>
+                        )}
 
                       <div className="border-t border-gray-200 pt-2 mt-2">
                         <div className="flex justify-between items-center">
@@ -597,14 +750,17 @@ const ProductDetailPage = () => {
 
                   <motion.button
                     onClick={handlePlaceOrder}
-                    className="w-full bg-orange-600 hover:bg-orange-700 text-white font-bold py-4 px-6 rounded-xl shadow-lg transition-colors duration-200"
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
+                    disabled={loading}
+                    className="w-full bg-orange-600 hover:bg-orange-700 disabled:bg-orange-400 text-white font-bold py-4 px-6 rounded-xl shadow-lg transition-colors duration-200 disabled:cursor-not-allowed"
+                    whileHover={!loading ? { scale: 1.02 } : {}}
+                    whileTap={!loading ? { scale: 0.98 } : {}}
                   >
                     <div className="flex items-center justify-center space-x-2">
                       <ShoppingCart size={20} />
                       <span>
-                        Order {selectedQuantity} {product.unit} - ₹{orderTotal}
+                        {loading
+                          ? "Placing Order..."
+                          : `Order ${selectedQuantity} ${product.unit} - ₹${orderTotal}`}
                       </span>
                     </div>
                   </motion.button>
