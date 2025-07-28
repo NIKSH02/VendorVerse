@@ -190,7 +190,7 @@ function SpecialItemsSection() {
             onClick={() => navigate("/all-items")}
             className="inline-flex items-center gap-2 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-8 py-4 rounded-xl text-lg font-semibold shadow-lg hover:shadow-2xl transform hover:scale-105 transition-all duration-300"
           >
-            Explore All Special Items
+            Explore All Items
             <svg
               xmlns="http://www.w3.org/2000/svg"
               className="h-5 w-5"
