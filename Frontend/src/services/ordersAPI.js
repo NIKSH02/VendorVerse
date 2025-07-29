@@ -65,11 +65,21 @@ export const ordersAPI = {
 
   // Update order status
   updateOrderStatus: async (orderId, statusData) => {
+    // Defensive: flatten nested action objects if present
+    let payload = statusData;
+    if (typeof statusData.action === "object" && statusData.action.action) {
+      payload = {
+        action: statusData.action.action,
+        notes: statusData.action.notes || statusData.notes || "",
+      };
+    }
+    console.log("Updating order status:", orderId, payload);
     try {
       const response = await apiClient.patch(
         `/orders/${orderId}/status`,
-        statusData
+        payload
       );
+      console.log("Order status updated:", response.data);
       return response.data;
     } catch (error) {
       console.error("Error updating order status:", error);

@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate, useLocation } from "react-router-dom";
+import useAuth from "../hooks/useAuth";
 import {
   User,
   Package,
@@ -24,6 +25,7 @@ const fadeInUp = {
 const DashboardSidebar = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user, logout } = useAuth();
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   const navigationItems = [
@@ -42,16 +44,16 @@ const DashboardSidebar = () => {
       description: "Manage your product listings",
     },
     {
-      id: "ordersToFulfill",
-      path: "/dashboard/orders-to-fulfill",
-      label: "Orders to Fulfill",
+      id: "ordersReceived",
+      path: "/dashboard/orders-received",
+      label: "Orders Received",
       icon: ShoppingCart,
-      description: "Orders you need to process",
+      description: "Orders you need to fulfill",
     },
     {
       id: "ordersPlaced",
       path: "/dashboard/orders-placed",
-      label: "Orders I Placed",
+      label: "Orders Placed",
       icon: ShoppingBag,
       description: "Orders you have placed",
     },
@@ -60,7 +62,7 @@ const DashboardSidebar = () => {
       path: "/dashboard/reviews",
       label: "Reviews",
       icon: Star,
-      description: "Manage your reviews",
+      description: "Write and manage your reviews",
     },
     {
       id: "notifications",
@@ -73,9 +75,15 @@ const DashboardSidebar = () => {
 
   const isActive = (path) => location.pathname === path;
 
-  const handleLogout = () => {
-    // Add logout logic here
-    navigate("/auth");
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate("/auth");
+    } catch (error) {
+      console.error("Logout error:", error);
+      // Even if logout fails, navigate to auth page
+      navigate("/auth");
+    }
   };
 
   return (
@@ -147,44 +155,72 @@ const DashboardSidebar = () => {
           {/* Navigation Menu */}
           <div className="flex-1 py-6">
             <nav className="px-4 space-y-2">
-              {navigationItems.map((item, index) => (
-                <motion.button
-                  key={item.id}
-                  onClick={() => {
-                    navigate(item.path);
-                    setIsMobileSidebarOpen(false); // Close mobile sidebar on selection
-                  }}
-                  className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 text-left relative ${
-                    isActive(item.path)
-                      ? "bg-orange-100 text-orange-600 border-l-4 border-orange-500"
-                      : "text-gray-600 hover:text-orange-600 hover:bg-orange-50"
-                  }`}
-                  variants={fadeInUp}
-                  initial="initial"
-                  animate="animate"
-                  transition={{ delay: index * 0.1 }}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  title={item.description}
-                >
-                  <item.icon size={20} />
-                  <span className="font-medium">{item.label}</span>
-                  {isActive(item.path) && (
-                    <motion.div
-                      className="absolute right-0 top-0 bottom-0 w-1 bg-orange-500 rounded-l"
-                      layoutId="activeTab"
-                    />
-                  )}
-                </motion.button>
-              ))}
+              {navigationItems
+                .filter((item) => {
+                  // Hide supplier-only items for non-suppliers
+                  if (item.hideForBuyers && !user?.isSupplier) {
+                    return false;
+                  }
+                  return true;
+                })
+                .map((item, index) => (
+                  <motion.button
+                    key={item.id}
+                    onClick={() => {
+                      navigate(item.path);
+                      setIsMobileSidebarOpen(false); // Close mobile sidebar on selection
+                    }}
+                    className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 text-left relative ${
+                      isActive(item.path)
+                        ? "bg-orange-100 text-orange-600 border-l-4 border-orange-500"
+                        : "text-gray-600 hover:text-orange-600 hover:bg-orange-50"
+                    }`}
+                    variants={fadeInUp}
+                    initial="initial"
+                    animate="animate"
+                    transition={{ delay: index * 0.1 }}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    title={item.description}
+                  >
+                    <item.icon size={20} />
+                    <span className="font-medium">{item.label}</span>
+                    {isActive(item.path) && (
+                      <motion.div
+                        className="absolute right-0 top-0 bottom-0 w-1 bg-orange-500 rounded-l"
+                        layoutId="activeTab"
+                      />
+                    )}
+                  </motion.button>
+                ))}
             </nav>
           </div>
 
           {/* User Info & Logout */}
           <div className="p-4 border-t border-gray-200">
             <div className="mb-4 p-3 bg-gray-50 rounded-lg">
-              <p className="text-sm font-medium text-gray-800">Welcome User</p>
-              <p className="text-xs text-gray-500">user@example.com</p>
+              <p className="text-sm font-medium text-gray-800">
+                Welcome {user?.name || user?.username || "User"}
+              </p>
+              <p className="text-xs text-gray-500">
+                {user?.email || "user@example.com"}
+              </p>
+              {user && user.isProfileComplete === true && (
+                <p className="text-xs text-green-600 mt-1">
+                  ✅ Profile completed
+                </p>
+              )}
+              {user && user.isProfileComplete === false && (
+                <p className="text-xs text-amber-600 mt-1">
+                  ⚠️ Please complete your profile
+                </p>
+              )}
+              {/* Debug info - remove this after testing */}
+              {user && (
+                <p className="text-xs text-gray-400 mt-1">
+                  Profile Status: {String(user.isProfileComplete)}
+                </p>
+              )}
             </div>
             <motion.button
               onClick={handleLogout}

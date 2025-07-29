@@ -462,7 +462,7 @@ const MyListings = () => {
                   whileHover={{ scale: 1.02 }}
                 >
                   {/* Product Image */}
-                  <div className="h-48 bg-gray-100 flex items-center justify-center relative overflow-hidden">
+                  <div className="h-48 bg-gray-100 relative overflow-hidden">
                     {product.image &&
                     product.image !== "/api/placeholder/150/150" ? (
                       <img
@@ -474,8 +474,17 @@ const MyListings = () => {
                           e.target.nextSibling.style.display = "flex";
                         }}
                       />
-                    ) : null}
-                    <div className="w-full h-full flex items-center justify-center">
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-gray-200">
+                        <Package size={48} className="text-gray-400" />
+                      </div>
+                    )}
+
+                    {/* Fallback for broken images */}
+                    <div
+                      className="w-full h-full flex items-center justify-center bg-gray-200 absolute inset-0"
+                      style={{ display: "none" }}
+                    >
                       <Package size={48} className="text-gray-400" />
                     </div>
 

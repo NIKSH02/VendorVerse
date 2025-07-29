@@ -19,9 +19,11 @@ export const productsAPI = {
   },
 
   // Get products by type
-  getProductsByType: async (type) => {
+  getProductsByType: async (type, filters = {}) => {
     try {
-      const response = await apiClient.get(`/products/type/${type}`);
+      const response = await apiClient.get(`/products/type/${type}`, {
+        params: filters,
+      });
       return response.data;
     } catch (error) {
       console.error("Error fetching products by type:", error);

@@ -4,6 +4,9 @@ const {
   sendEmailVerificationOTP,
   verifyEmailOTP,
   resendEmailVerificationOTP,
+  debugCheckUser,
+  fixCorruptedUsername,
+  resetUserPassword,
 } = require("../controllers/user.controller");
 const upload = require("../middlewares/multer.middleware");
 const { loginUser, logoutUser } = require("../controllers/login.controller");
@@ -35,6 +38,13 @@ const {
 
 router.post("/register", registerUser); // Route to register a user
 router.post("/login", loginUser); // Route to login a user
+
+// Test route to verify routing is working
+router.get("/test", (req, res) => {
+  console.log("Test route hit!");
+  res.json({ message: "Backend is working!", timestamp: new Date() });
+});
+
 router.post("/logout", verifyJWT, logoutUser); // Route to logout a user
 router.post("/refresh-token", refreshToken); // Route to refresh the access token
 router.patch("/change-password", verifyJWT, changePassword); // Route to change the password
@@ -59,6 +69,15 @@ router.patch(
 router.post("/send-verification-otp", sendEmailVerificationOTP); // Send OTP for email verification
 router.post("/verify-email-otp", verifyEmailOTP); // Verify email OTP
 router.post("/resend-verification-otp", resendEmailVerificationOTP); // Resend email verification OTP
+
+// Debug route to check for conflicting users
+router.get("/debug-check", debugCheckUser); // Debug endpoint to check user conflicts
+
+// Fix corrupted username route
+router.post("/fix-username", fixCorruptedUsername); // Fix corrupted username endpoint
+
+// Reset password route
+router.post("/reset-password", resetUserPassword); // Reset password for corrupted users
 
 // router.post("/signup", signup);
 // router.route('/register').post(registerUser);    // Route to register a user (used chaining method syntax)

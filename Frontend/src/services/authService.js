@@ -11,11 +11,12 @@ const authAPI = {
     return response.data;
   },
 
-  verifyEmailOTP: async (email, otp) => {
-    const response = await apiClient.post("/users/verify-email-otp", {
-      email,
-      otp,
-    });
+  verifyEmailOTP: async (verificationData) => {
+    // verificationData contains: { email, otp, username, password, name, fullname }
+    const response = await apiClient.post(
+      "/users/verify-email-otp",
+      verificationData
+    );
     return response.data;
   },
 

@@ -1,7 +1,17 @@
 import axios from "axios";
 
+// 🔧 DEVELOPMENT TOGGLE - Change this to switch between local and hosted
+const USE_LOCAL_SERVER =
+  import.meta.env.VITE_USE_LOCAL_SERVER === "true" || true; // Check .env file first, fallback to true
+
 // Base URL for your backend API
-const BASE_URL = 'https://vendorverse-uzqz.onrender.com/api';
+const BASE_URL = USE_LOCAL_SERVER
+  ? import.meta.env.VITE_LOCAL_API_URL || "http://localhost:5001/api" // Fixed: Changed from 8000 to 5001
+  : import.meta.env.VITE_HOSTED_API_URL ||
+    "https://vendorverse-uzqz.onrender.com/api"; // Hosted production server
+
+console.log("🌐 API Base URL:", BASE_URL);
+console.log("🔧 Using Local Server:", USE_LOCAL_SERVER);
 
 // Create axios instance
 const apiClient = axios.create({

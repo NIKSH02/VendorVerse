@@ -58,7 +58,7 @@ const Reviews = () => {
   useEffect(() => {
     fetchReviewableOrders();
     fetchUserReviews();
-  }, []);
+  }, [fetchReviewableOrders]);
 
   const handleSubmitReview = async () => {
     if (!selectedOrder) return;

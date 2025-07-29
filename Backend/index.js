@@ -36,7 +36,7 @@ const io = socketIo(server, {
 app.use(Cors({
     origin: ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:5001', 'https://cc5wnhxq-5001.inc1.devtunnels.ms', "https://cc5wnhxq-5173.inc1.devtunnels.ms", "https://vendorverse-uzqz.onrender.com", "https://vendorverse-eight.vercel.app"],
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS']
 }));
 // app.options('*', Cors()); // Enable pre-flight for all routes
 

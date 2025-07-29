@@ -20,21 +20,71 @@ const generateAccessTokenAndRefreshToken = async (userId) => {
 };
 
 const loginUser = asynchandler(async (req, res) => {
+  console.log("🚀 LOGIN ROUTE HIT!");
+  console.log("📝 Request Body:", req.body);
+  console.log("📝 Request Headers:", req.headers);
+
   const { email, username, password } = req.body;
+
+  console.log("Login attempt with:", {
+    email: email || "NOT_PROVIDED",
+    username: username || "NOT_PROVIDED",
+    password: password ? "PROVIDED" : "NOT_PROVIDED",
+  });
 
   if (!password || (!email && !username)) {
     throw new apiError(400, "Please provide email/username and password");
   }
 
-  const user = await UserSchema.findOne({
-    $or: [{ email: email }, { username: username }],
-  });
+  // Build search query
+  const searchQuery = {
+    $or: [],
+  };
+
+  if (email) {
+    searchQuery.$or.push({ email: email });
+  }
+
+  if (username) {
+    searchQuery.$or.push({ username: username });
+  }
+
+  console.log(
+    "Searching for user with query:",
+    JSON.stringify(searchQuery, null, 2)
+  );
+
+  const user = await UserSchema.findOne(searchQuery);
+
+  console.log(
+    "User found:",
+    user
+      ? {
+          id: user._id,
+          email: user.email,
+          username: user.username,
+          isEmailVerified: user.isEmailVerified,
+          hasPassword: !!user.password,
+        }
+      : "NO_USER_FOUND"
+  );
 
   if (!user) {
     throw new apiError(404, "User not found");
   }
 
+  console.log("Attempting password verification...");
+  console.log("Raw password from request:", password);
+  console.log("Stored password hash:", user.password);
+
   const isPasswordMatch = await user.isPasswordMatch(password);
+  console.log("Password match result:", isPasswordMatch);
+
+  // Additional debugging: Let's also try a direct bcrypt compare
+  const bcrypt = require("bcryptjs");
+  const directCompare = await bcrypt.compare(password, user.password);
+  console.log("Direct bcrypt compare result:", directCompare);
+
   if (!isPasswordMatch) {
     throw new apiError(400, "Invalid credentials");
   }

@@ -1,41 +1,67 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import apiClient from '../api/axios';
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { productsAPI } from "../services/productsAPI";
+import apiClient from "../api/axios";
 
-const categories = ['All Items', 'vegetables', 'spices', 'grains', 'fruits', 'dairy'];
+const categories = [
+  "All Items",
+  "vegetables",
+  "spices",
+  "grains",
+  "fruits",
+  "dairy",
+  "other",
+];
 
 function RawItemsSection() {
   const navigate = useNavigate();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [activeCategory, setActiveCategory] = useState('All Items');
+  const [activeCategory, setActiveCategory] = useState("All Items");
 
-  // Fetch products from backend
+  // Fetch products from backend - only RAW type products
   const fetchProducts = async (category = null) => {
     try {
       setLoading(true);
       setError(null);
-      
-      let url;
-      if (category && category !== 'All Items') {
-        // Fetch products by category using query parameter
-        url = `/products?category=${encodeURIComponent(category)}`;
+
+      let response;
+
+      if (category && category !== "All Items") {
+        // Fetch RAW products with specific category filter
+        console.log(
+          "Fetching raw products with category:",
+          category.toLowerCase()
+        );
+        response = await productsAPI.getProductsByType("raw", {
+          category: category.toLowerCase(),
+        });
       } else {
-        // Fetch all products
-        url = '/products';
+        // Fetch all RAW products
+        console.log("Fetching all raw products");
+        response = await productsAPI.getProductsByType("raw");
       }
-      
-      const response = await apiClient.get(url);
-      
-      if (response.data.success) {
-        setProducts(response.data.data || []);
+
+      console.log("Raw products fetched:", {
+        category: category || "All Items",
+        requestedCategory:
+          category !== "All Items" ? category?.toLowerCase() : null,
+        success: response.success,
+        count: response.data?.length || 0,
+        products: response.data,
+      });
+
+      if (response.success) {
+        setProducts(response.data || []);
       } else {
-        setError('Failed to fetch products');
+        setError("Failed to fetch products");
+        setProducts([]);
       }
     } catch (err) {
-      console.error('Error fetching products:', err);
-      setError('Error loading products. Please try again.');
+      console.error("Error fetching raw products:", err);
+      setError("Error loading products. Please try again.");
+      setProducts([]);
     } finally {
       setLoading(false);
     }
@@ -43,6 +69,7 @@ function RawItemsSection() {
 
   // Handle category filter
   const handleCategoryFilter = (category) => {
+    console.log("Category filter changed to:", category);
     setActiveCategory(category);
     fetchProducts(category);
   };
@@ -60,16 +87,17 @@ function RawItemsSection() {
   // Get primary image URL
   const getImageUrl = (product) => {
     if (product.imageUrl) return product.imageUrl;
-    if (product.imageUrls && product.imageUrls.length > 0) return product.imageUrls[0];
+    if (product.imageUrls && product.imageUrls.length > 0)
+      return product.imageUrls[0];
     if (product.imageDetails && product.imageDetails.length > 0) {
-      const primaryImage = product.imageDetails.find(img => img.isPrimary);
+      const primaryImage = product.imageDetails.find((img) => img.isPrimary);
       return primaryImage ? primaryImage.url : product.imageDetails[0].url;
     }
-    return '/placeholder-product.jpg'; // Fallback image
+    return "/placeholder-product.jpg"; // Fallback image
   };
   // Format category name for display
   const formatCategoryName = (category) => {
-    if (category === 'All Items') return category;
+    if (category === "All Items") return category;
     return category.charAt(0).toUpperCase() + category.slice(1);
   };
 
@@ -82,7 +110,8 @@ function RawItemsSection() {
             Raw Items <span className="text-orange-500">Marketplace</span>
           </h2>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            High-quality ingredients at wholesale prices. Direct from trusted suppliers to your kitchen.
+            Fresh, unprocessed raw ingredients at wholesale prices. Direct from
+            trusted suppliers to your kitchen.
           </p>
         </div>
 
@@ -92,16 +121,64 @@ function RawItemsSection() {
             <button
               key={category}
               onClick={() => handleCategoryFilter(category)}
-              className={`px-6 py-2 rounded-full font-semibold transition-colors ${
+              className={`px-6 py-3 rounded-full font-semibold transition-all duration-300 transform hover:scale-105 ${
                 activeCategory === category
-                  ? 'bg-orange-500 text-white hover:bg-orange-600'
-                  : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'
+                  ? "bg-orange-500 text-white hover:bg-orange-600 shadow-lg"
+                  : "bg-white text-gray-700 hover:bg-gray-100 border border-gray-200 hover:border-orange-300"
               }`}
             >
               {formatCategoryName(category)}
             </button>
           ))}
         </div>
+
+        {/* Active Filter Display */}
+        {activeCategory !== "All Items" && (
+          <div className="text-center mb-6">
+            <span className="inline-flex items-center px-4 py-2 rounded-full bg-orange-100 text-orange-800 text-sm font-medium">
+              <svg
+                className="w-4 h-4 mr-2"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M3 3a1 1 0 011-1h12a1 1 0 011 1v3a1 1 0 01-.293.707L12 11.414V15a1 1 0 01-.293.707l-2 2A1 1 0 018 17v-5.586L3.293 6.707A1 1 0 013 6V3z"
+                  clipRule="evenodd"
+                />
+              </svg>
+              Filtered by: {formatCategoryName(activeCategory)} (
+              {products.length} {products.length === 1 ? "product" : "products"}
+              )
+              <button
+                onClick={() => handleCategoryFilter("All Items")}
+                className="ml-2 text-orange-600 hover:text-orange-800"
+              >
+                <svg
+                  className="w-4 h-4"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </button>
+            </span>
+          </div>
+        )}
+
+        {/* Products Count Display for All Items */}
+        {activeCategory === "All Items" && !loading && !error && (
+          <div className="text-center mb-6">
+            <span className="text-gray-600 text-sm">
+              Showing {products.length} raw{" "}
+              {products.length === 1 ? "product" : "products"}
+            </span>
+          </div>
+        )}
 
         {/* Loading State */}
         {loading && (
@@ -128,9 +205,36 @@ function RawItemsSection() {
         {/* No Products Found */}
         {!loading && !error && products.length === 0 && (
           <div className="text-center py-12">
-            <p className="text-gray-600 dark:text-gray-300 text-lg">
-              No products found in this category.
+            <div className="mb-4">
+              <svg
+                className="mx-auto h-12 w-12 text-gray-400"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-6m-6 0h-6"
+                />
+              </svg>
+            </div>
+            <p className="text-gray-600 text-lg mb-2">
+              No raw products found
+              {activeCategory !== "All Items"
+                ? ` in ${formatCategoryName(activeCategory)} category`
+                : ""}
+              .
             </p>
+            {activeCategory !== "All Items" && (
+              <button
+                onClick={() => handleCategoryFilter("All Items")}
+                className="text-orange-500 hover:text-orange-600 font-medium"
+              >
+                View all raw products instead
+              </button>
+            )}
           </div>
         )}
 
@@ -164,7 +268,7 @@ function RawItemsSection() {
                     alt={product.itemName}
                     className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-500"
                     onError={(e) => {
-                      e.target.src = '/placeholder-product.jpg';
+                      e.target.src = "/placeholder-product.jpg";
                     }}
                   />
                   {/* Quantity Available Badge removed */}
@@ -175,15 +279,19 @@ function RawItemsSection() {
                   <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2 group-hover:text-orange-500 transition-colors">
                     {product.itemName}
                   </h3>
-                  
+
                   <p className="text-gray-600 dark:text-gray-300 text-xs leading-relaxed mb-4">
-                    {product.description || 'High quality product from trusted supplier'}
+                    {product.description ||
+                      "High quality product from trusted supplier"}
                   </p>
 
                   {/* Supplier Info */}
                   {product.userId && (
                     <div className="text-xs text-gray-500 dark:text-gray-400 mb-3">
-                      Supplier: {product.userId.fullname || product.userId.name || product.userId.username}
+                      Supplier:{" "}
+                      {product.userId.fullname ||
+                        product.userId.name ||
+                        product.userId.username}
                     </div>
                   )}
 
@@ -191,7 +299,9 @@ function RawItemsSection() {
                   <div className="flex gap-2">
                     <button
                       className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 px-2 rounded-lg transition-all duration-300 transform hover:scale-105 hover:shadow-lg text-xs"
-                      onClick={() => navigate('/productdetail', { state: { item: product } })}
+                      onClick={() =>
+                        navigate("/productdetail", { state: { item: product } })
+                      }
                     >
                       Place Order
                     </button>
@@ -207,12 +317,21 @@ function RawItemsSection() {
         {/* Explore All Items Button */}
         <div className="mt-16 text-center">
           <button
-            onClick={() => navigate('/all-items')}
+            onClick={() => navigate("/all-items")}
             className="inline-flex items-center gap-2 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-8 py-4 rounded-xl text-lg font-semibold shadow-lg hover:shadow-2xl transform hover:scale-105 transition-all duration-300"
           >
             Explore All Items
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" />
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-5 w-5"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+            >
+              <path
+                fillRule="evenodd"
+                d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z"
+                clipRule="evenodd"
+              />
             </svg>
           </button>
         </div>
