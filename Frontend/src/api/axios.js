@@ -1,8 +1,7 @@
 import axios from "axios";
 
 // 🔧 DEVELOPMENT TOGGLE - Change this to switch between local and hosted
-const USE_LOCAL_SERVER =
-  import.meta.env.VITE_USE_LOCAL_SERVER === "true" || true; // Check .env file first, fallback to true
+const USE_LOCAL_SERVER = import.meta.env.VITE_USE_LOCAL_SERVER === "true"; // Check .env file first, fallback to false
 
 // Base URL for your backend API
 const BASE_URL = USE_LOCAL_SERVER
