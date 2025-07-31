@@ -158,11 +158,14 @@ const OrdersReceived = () => {
 
   const handleOrderAction = async (orderId, action) => {
     const actionStr = typeof action === "string" ? action : action?.action;
+    // For 'complete', always open modal and do NOT call updateOrderStatus here
     if (actionStr === "complete") {
       setExchangeOrderId(orderId);
       setShowExchangeModal(true);
       return;
     }
+    // Prevent accidental call with 'complete' action
+    if (actionStr === "complete") return;
     try {
       setActionLoading(true);
       await updateOrderStatus(orderId, { action: actionStr, notes: "" });
@@ -186,9 +189,11 @@ const OrdersReceived = () => {
     }
     try {
       setActionLoading(true);
+      // Ensure exchangeCode is at the root, not nested in action
       await updateOrderStatus(exchangeOrderId, {
         action: "complete",
         exchangeCode: exchangeInput.trim(),
+        notes: "",
       });
       await fetchSellerOrders();
       setShowExchangeModal(false);
@@ -211,55 +216,6 @@ const OrdersReceived = () => {
   {
     /* Exchange Code Modal */
   }
-  <AnimatePresence>
-    {showExchangeModal && (
-      <motion.div
-        className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-      >
-        <motion.div
-          className="bg-white rounded-lg p-6 max-w-md w-full mx-4"
-          initial={{ scale: 0.8, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          exit={{ scale: 0.8, opacity: 0 }}
-        >
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">
-            Enter Exchange Code
-          </h3>
-          <input
-            type="text"
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-orange-500"
-            placeholder="Enter code provided by buyer"
-            value={exchangeInput}
-            onChange={(e) => setExchangeInput(e.target.value)}
-            disabled={actionLoading}
-          />
-          <div className="flex space-x-2">
-            <button
-              className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
-              onClick={handleExchangeSubmit}
-              disabled={actionLoading}
-            >
-              {actionLoading ? "Processing..." : "Submit"}
-            </button>
-            <button
-              className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-              onClick={() => {
-                setShowExchangeModal(false);
-                setExchangeInput("");
-                setExchangeOrderId(null);
-              }}
-              disabled={actionLoading}
-            >
-              Cancel
-            </button>
-          </div>
-        </motion.div>
-      </motion.div>
-    )}
-  </AnimatePresence>;
 
   const viewOrderDetails = (order) => {
     setSelectedOrder(order);
@@ -622,21 +578,18 @@ const OrdersReceived = () => {
                     </div>
                   )}
 
-                  {/* Exchange Code */}
-                  {selectedOrder.status === "processing" &&
-                    selectedOrder.exchangeCode && (
-                      <div className="bg-purple-50 p-4 rounded-lg">
-                        <h4 className="font-semibold text-purple-800 mb-2">
-                          Exchange Code
-                        </h4>
-                        <p className="text-2xl font-bold text-purple-700 font-mono">
-                          {selectedOrder.exchangeCode}
-                        </p>
-                        <p className="text-sm text-purple-600 mt-1">
-                          Buyer will provide this code during delivery/pickup
-                        </p>
-                      </div>
-                    )}
+                  {/* Exchange Code - Do not show code to seller, only show info text if needed */}
+                  {selectedOrder.status === "processing" && (
+                    <div className="bg-purple-50 p-4 rounded-lg">
+                      <h4 className="font-semibold text-purple-800 mb-2">
+                        Exchange Code Required
+                      </h4>
+                      <p className="text-sm text-purple-600 mt-1">
+                        Buyer will provide you a code at the time of delivery or
+                        pickup. Enter this code to mark the order as complete.
+                      </p>
+                    </div>
+                  )}
 
                   {/* Notes */}
                   {selectedOrder.notes && (
@@ -692,6 +645,60 @@ const OrdersReceived = () => {
           )}
         </AnimatePresence>
       </motion.div>
+      {/* Exchange Code Modal */}
+      <AnimatePresence>
+        {showExchangeModal && (
+          <motion.div
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setShowExchangeModal(false)}
+          >
+            <motion.div
+              className="bg-white rounded-lg max-w-md w-full p-6"
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.8, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h3 className="text-xl font-semibold text-gray-800 mb-4">
+                Enter Exchange Code
+              </h3>
+              <p className="text-sm text-gray-600 mb-4">
+                Please enter the exchange code provided by the buyer to mark the
+                order as complete.
+              </p>
+              <input
+                type="text"
+                value={exchangeInput}
+                onChange={(e) => setExchangeInput(e.target.value)}
+                placeholder="Enter exchange code"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg mb-4"
+              />
+              <div className="flex justify-end space-x-2">
+                <button
+                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+                  onClick={() => setShowExchangeModal(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                  className={`px-4 py-2 text-white rounded-lg font-medium transition-colors ${
+                    actionLoading
+                      ? "bg-gray-400 cursor-not-allowed"
+                      : "bg-green-500 hover:bg-green-600"
+                  }`}
+                  onClick={handleExchangeSubmit}
+                  disabled={actionLoading}
+                >
+                  {actionLoading ? "Processing..." : "Submit"}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </DashboardLayout>
   );
 };

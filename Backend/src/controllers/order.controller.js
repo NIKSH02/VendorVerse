@@ -300,16 +300,19 @@ const updateOrderStatus = asyncHandler(async (req, res) => {
       break;
     case "complete":
       // Only require exchange code for 'complete' action
-      if (!exchangeCode) {
+      if (!exchangeCode || typeof exchangeCode !== "string") {
         throw new ApiError(
           400,
-          "Exchange code is required to complete the order"
+          "Exchange code is required to complete the order."
         );
       }
-      if (!order.exchangeCode) {
-        throw new ApiError(400, "No exchange code generated for this order");
+      if (!order.exchangeCode || typeof order.exchangeCode !== "string") {
+        throw new ApiError(400, "No exchange code generated for this order.");
       }
-      if (exchangeCode.trim().toUpperCase() !== order.exchangeCode) {
+      // Compare codes case-insensitively and trimmed
+      const submittedCode = exchangeCode.trim().toUpperCase();
+      const dbCode = order.exchangeCode.trim().toUpperCase();
+      if (submittedCode !== dbCode) {
         throw new ApiError(
           400,
           "Invalid exchange code. Please enter the correct code provided by the buyer."

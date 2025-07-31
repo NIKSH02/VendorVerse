@@ -65,21 +65,32 @@ export const ordersAPI = {
 
   // Update order status
   updateOrderStatus: async (orderId, statusData) => {
-    // Defensive: flatten nested action objects if present
-    let payload = statusData;
+    console.log("Updating order status:", orderId, statusData);
+    let payload = { ...statusData };
+    console.log("Initial Payload:", payload);
+    // If action is nested inside an object, flatten all fields from action to root
     if (typeof statusData.action === "object" && statusData.action.action) {
       payload = {
+        ...statusData,
         action: statusData.action.action,
-        notes: statusData.action.notes || statusData.notes || "",
       };
+      // Move exchangeCode and notes (if present) to root
+      if (statusData.action.exchangeCode) {
+        payload.exchangeCode = statusData.action.exchangeCode;
+      }
+      if (statusData.action.notes) {
+        payload.notes = statusData.action.notes;
+      }
+      console.log("Flattened Payload:", payload);
     }
-    console.log("Updating order status:", orderId, payload);
+
+    console.log("✅ Final Payload Being Sent:", payload);
+
     try {
       const response = await apiClient.patch(
         `/orders/${orderId}/status`,
         payload
       );
-      console.log("Order status updated:", response.data);
       return response.data;
     } catch (error) {
       console.error("Error updating order status:", error);
