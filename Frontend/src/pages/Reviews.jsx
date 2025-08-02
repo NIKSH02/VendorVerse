@@ -8,6 +8,7 @@ import {
   User,
   Calendar,
   MessageSquare,
+  Trash2,
 } from "lucide-react";
 import { useOrders } from "../context/OrderContext";
 import { useAuth } from "../context/AuthContext";
@@ -36,6 +37,8 @@ const Reviews = () => {
   const [userReviews, setUserReviews] = useState([]);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [deletingReview, setDeletingReview] = useState(null);
+  const [reviewToDelete, setReviewToDelete] = useState(null);
 
   // Review form state
   const [selectedOrder, setSelectedOrder] = useState(null);
@@ -129,6 +132,56 @@ const Reviews = () => {
     setRating(5);
     setReviewText("");
     setShowReviewForm(true);
+  };
+
+  const handleDeleteReview = async (reviewId) => {
+    console.log("🗑️ Delete button clicked for review ID:", reviewId);
+
+    // Temporarily bypass toast confirmation for debugging
+    if (window.confirm("Are you sure you want to delete this review?")) {
+      console.log("✅ User confirmed delete, calling confirmDeleteReview...");
+      await confirmDeleteReview(reviewId);
+    } else {
+      console.log("❌ User cancelled delete");
+    }
+  };
+
+  const confirmDeleteReview = async (reviewId) => {
+    console.log("🔥 Starting delete process for review:", reviewId);
+    console.log("🔍 Review ID type:", typeof reviewId);
+    console.log("🔍 Review ID length:", reviewId.length);
+
+    try {
+      setDeletingReview(reviewId);
+      console.log("📡 Calling reviewsAPI.deleteReview...");
+      console.log("📡 Full API URL will be: /reviews/" + reviewId);
+
+      const result = await reviewsAPI.deleteReview(reviewId);
+      console.log("✅ Delete API response:", result);
+
+      // Remove the review from local state
+      setUserReviews((prevReviews) =>
+        prevReviews.filter((review) => review._id !== reviewId)
+      );
+
+      // Refresh reviewable orders as the deleted review might make an order reviewable again
+      await fetchReviewableOrders();
+
+      toast.success("Review deleted successfully!");
+    } catch (error) {
+      console.error("❌ Error deleting review:", error);
+      console.error("❌ Error details:", error.response?.data || error.message);
+      console.error("❌ Error status:", error.response?.status);
+      console.error("❌ Full error object:", error);
+      toast.error(
+        `Failed to delete review: ${
+          error.response?.data?.message || error.message
+        }`
+      );
+    } finally {
+      setDeletingReview(null);
+      setReviewToDelete(null);
+    }
   };
 
   const renderStars = (
@@ -357,6 +410,27 @@ const Reviews = () => {
                             </span>
                           </div>
                         </div>
+
+                        {/* Delete Button */}
+                        <motion.button
+                          onClick={() => handleDeleteReview(review._id)}
+                          disabled={deletingReview === review._id}
+                          className="flex items-center space-x-2 px-3 py-2 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed border border-red-200 hover:border-red-300"
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          title="Delete Review"
+                        >
+                          {deletingReview === review._id ? (
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600"></div>
+                          ) : (
+                            <Trash2 size={16} />
+                          )}
+                          <span className="text-sm">
+                            {deletingReview === review._id
+                              ? "Deleting..."
+                              : "Delete"}
+                          </span>
+                        </motion.button>
                       </div>
                     </motion.div>
                   ))}

@@ -92,24 +92,27 @@ const createReview = asyncHandler(async (req, res) => {
   // Check if user already reviewed this specific target
   const existingReviewQuery = {
     fromUserId: req.user._id,
-    reviewType: reviewType
+    reviewType: reviewType,
   };
-  
+
   if (reviewType === "sample") {
     existingReviewQuery.sampleId = targetId;
   } else {
     existingReviewQuery.orderId = targetId;
   }
 
-  console.log('🔍 Checking for existing review with query:', existingReviewQuery);
+  console.log(
+    "🔍 Checking for existing review with query:",
+    existingReviewQuery
+  );
   const existingReview = await Review.findOne(existingReviewQuery);
 
   if (existingReview) {
-    console.log('❌ Found existing review:', existingReview._id);
+    console.log("❌ Found existing review:", existingReview._id);
     throw new ApiError(400, `You have already reviewed this ${reviewType}`);
   }
-  
-  console.log('✅ No existing review found, proceeding to create new review');
+
+  console.log("✅ No existing review found, proceeding to create new review");
 
   // Create review with explicit field assignment
   const reviewData = {
@@ -582,6 +585,70 @@ const getSellerReviews = asyncHandler(async (req, res) => {
   );
 });
 
+// Delete a review (only the author can delete their own review)
+const deleteReview = asyncHandler(async (req, res) => {
+  const { reviewId } = req.params;
+
+  const review = await Review.findById(reviewId);
+  if (!review) {
+    throw new ApiError(404, "Review not found");
+  }
+
+  // Check if the current user is the author of the review
+  if (review.fromUserId.toString() !== req.user._id.toString()) {
+    throw new ApiError(403, "You can only delete your own reviews");
+  }
+
+  // If this is an order review, remove the reviewId reference from the order
+  if (review.orderId) {
+    const Order = require("../models/Order.model");
+    await Order.findByIdAndUpdate(review.orderId, {
+      $unset: { reviewId: 1 },
+      isReviewable: true,
+    });
+  }
+
+  // If this is a sample review, update the sample status
+  if (review.sampleId) {
+    const Sample = require("../models/Sample.model");
+    await Sample.findByIdAndUpdate(review.sampleId, {
+      isReviewed: false,
+      $unset: { reviewId: 1 },
+      status: "received",
+    });
+  }
+
+  // Delete the review
+  await Review.findByIdAndDelete(reviewId);
+
+  // Recalculate the reviewed user's rating
+  const User = require("../models/User.model");
+  const remainingReviews = await Review.find({
+    toUserId: review.toUserId,
+    isVerified: true,
+  });
+
+  if (remainingReviews.length > 0) {
+    const avgRating =
+      remainingReviews.reduce((sum, r) => sum + r.rating, 0) /
+      remainingReviews.length;
+    await User.findByIdAndUpdate(review.toUserId, {
+      rating: Math.round(avgRating * 10) / 10,
+      $inc: { trustScore: review.reviewType === "sample" ? -2 : -1 },
+    });
+  } else {
+    // No reviews left, reset rating
+    await User.findByIdAndUpdate(review.toUserId, {
+      rating: 0,
+      $inc: { trustScore: review.reviewType === "sample" ? -2 : -1 },
+    });
+  }
+
+  res
+    .status(200)
+    .json(new ApiResponse(200, null, "Review deleted successfully"));
+});
+
 module.exports = {
   createReview,
   getUserReviews,
@@ -590,4 +657,5 @@ module.exports = {
   markReviewHelpful,
   getUserGivenReviews,
   getSellerReviews,
+  deleteReview,
 };

@@ -100,10 +100,14 @@ export const reviewsAPI = {
   // Delete review
   deleteReview: async (reviewId) => {
     try {
+      console.log("🗑️ reviewsAPI.deleteReview called with ID:", reviewId);
       const response = await apiClient.delete(`/reviews/${reviewId}`);
+      console.log("✅ Delete review API response:", response.data);
       return response.data;
     } catch (error) {
-      console.error("Error deleting review:", error);
+      console.error("❌ Error in reviewsAPI.deleteReview:", error);
+      console.error("❌ Error response:", error.response?.data);
+      console.error("❌ Error status:", error.response?.status);
       throw error;
     }
   },
