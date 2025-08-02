@@ -78,7 +78,7 @@ const ReviewSchema = new mongoose.Schema({
     }
 }, {timestamps: true});
 
-// Ensure one review per order/sample combination
+// Simple compound indexes with sparse option (MongoDB standard approach)
 ReviewSchema.index({ fromUserId: 1, orderId: 1 }, { unique: true, sparse: true });
 ReviewSchema.index({ fromUserId: 1, sampleId: 1 }, { unique: true, sparse: true });
 

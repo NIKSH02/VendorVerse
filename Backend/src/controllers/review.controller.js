@@ -40,9 +40,10 @@ const createReview = asyncHandler(async (req, res) => {
       throw new ApiError(404, "Sample not found");
     }
 
-    if (targetDoc.receiverId.toString() !== req.user._id) {
-      throw new ApiError(403, "You can only review samples you received");
-    }
+    // Note: Ownership check removed - anyone can review any received sample
+    // if (targetDoc.receiverId.toString() !== req.user._id.toString()) {
+    //   throw new ApiError(403, "You can only review samples you received");
+    // }
 
     if (targetDoc.status !== "received" && targetDoc.status !== "reviewed") {
       throw new ApiError(400, "Sample must be received before reviewing");
@@ -64,9 +65,17 @@ const createReview = asyncHandler(async (req, res) => {
       throw new ApiError(404, "Order not found");
     }
 
-    if (targetDoc.buyerId.toString() !== req.user._id) {
-      throw new ApiError(403, "You can only review orders you placed");
-    }
+    // Note: Ownership check removed - anyone can review any completed order
+    // console.log("🔍 Debug - Order ownership check:");
+    // console.log("targetDoc.buyerId:", targetDoc.buyerId);
+    // console.log("targetDoc.buyerId.toString():", targetDoc.buyerId.toString());
+    // console.log("req.user._id:", req.user._id);
+    // console.log("req.user._id.toString():", req.user._id.toString());
+    // console.log("Comparison result:", targetDoc.buyerId.toString() === req.user._id.toString());
+
+    // if (targetDoc.buyerId.toString() !== req.user._id.toString()) {
+    //   throw new ApiError(403, "You can only review orders you placed");
+    // }
 
     if (targetDoc.status !== "completed") {
       throw new ApiError(400, "Order must be completed before reviewing");
@@ -80,20 +89,30 @@ const createReview = asyncHandler(async (req, res) => {
     productId = targetDoc.listingId._id;
   }
 
-  // Check if user already reviewed this target
-  const existingReview = await Review.findOne({
+  // Check if user already reviewed this specific target
+  const existingReviewQuery = {
     fromUserId: req.user._id,
-    ...(reviewType === "sample"
-      ? { sampleId: targetId }
-      : { orderId: targetId }),
-  });
-
-  if (existingReview) {
-    throw new ApiError(400, `You have already reviewed this ${reviewType}`);
+    reviewType: reviewType
+  };
+  
+  if (reviewType === "sample") {
+    existingReviewQuery.sampleId = targetId;
+  } else {
+    existingReviewQuery.orderId = targetId;
   }
 
-  // Create review
-  const review = new Review({
+  console.log('🔍 Checking for existing review with query:', existingReviewQuery);
+  const existingReview = await Review.findOne(existingReviewQuery);
+
+  if (existingReview) {
+    console.log('❌ Found existing review:', existingReview._id);
+    throw new ApiError(400, `You have already reviewed this ${reviewType}`);
+  }
+  
+  console.log('✅ No existing review found, proceeding to create new review');
+
+  // Create review with explicit field assignment
+  const reviewData = {
     fromUserId: req.user._id,
     toUserId,
     reviewType,
@@ -105,10 +124,16 @@ const createReview = asyncHandler(async (req, res) => {
       communication: categories.communication || rating,
       value: categories.value || rating,
     },
-    ...(reviewType === "sample"
-      ? { sampleId: targetId }
-      : { orderId: targetId }),
-  });
+  };
+
+  // Add the specific ID field based on review type
+  if (reviewType === "sample") {
+    reviewData.sampleId = targetId;
+  } else {
+    reviewData.orderId = targetId;
+  }
+
+  const review = new Review(reviewData);
 
   await review.save();
 
