@@ -10,6 +10,7 @@ import {
   MessageSquare,
 } from "lucide-react";
 import { useOrders } from "../context/OrderContext";
+import { useAuth } from "../context/AuthContext";
 import { reviewsAPI } from "../services/reviewsAPI";
 import toast from "react-hot-toast";
 
@@ -30,6 +31,7 @@ const staggerContainer = {
 
 const Reviews = () => {
   const { reviewableOrders, fetchReviewableOrders } = useOrders();
+  const { user } = useAuth(); // Get current user info
   const [activeTab, setActiveTab] = useState("write"); // "write" or "my-reviews"
   const [userReviews, setUserReviews] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -46,9 +48,13 @@ const Reviews = () => {
     try {
       setLoading(true);
       const response = await reviewsAPI.getUserReviews();
-      setUserReviews(response.data || []);
+      console.log("User reviews response:", response);
+      // The reviews are nested under response.data.reviews
+      const reviews = response?.data?.reviews || [];
+      setUserReviews(Array.isArray(reviews) ? reviews : []);
     } catch (error) {
       console.error("Error fetching user reviews:", error);
+      setUserReviews([]); // Set empty array on error
       toast.error("Failed to fetch your reviews");
     } finally {
       setLoading(false);
@@ -71,14 +77,32 @@ const Reviews = () => {
     try {
       setSubmitting(true);
 
+      console.log("Selected Order:", selectedOrder);
+      console.log("Current User:", user);
+      console.log("Current User ID:", user?._id);
+      console.log(
+        "Selected Order ID:",
+        selectedOrder?._id || selectedOrder?.orderId
+      );
+      console.log("Order structure keys:", Object.keys(selectedOrder));
+
+      const targetId = selectedOrder._id || selectedOrder.orderId;
+      console.log("Target ID to be sent:", targetId);
+
       const reviewData = {
-        orderId: selectedOrder._id,
-        sellerId: selectedOrder.sellerId._id,
-        productId: selectedOrder.listingId._id,
+        reviewType: "order",
+        targetId: targetId,
         rating,
-        reviewText: reviewText.trim(),
-        orderType: "purchase",
+        comment: reviewText.trim(),
+        categories: {
+          quality: rating,
+          delivery: rating,
+          communication: rating,
+          value: rating,
+        },
       };
+
+      console.log("Review Data being sent:", reviewData);
 
       await reviewsAPI.submitReview(reviewData);
 
@@ -284,7 +308,7 @@ const Reviews = () => {
               <div className="flex items-center justify-center h-64">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
               </div>
-            ) : userReviews.length === 0 ? (
+            ) : !Array.isArray(userReviews) || userReviews.length === 0 ? (
               <div className="text-center py-12">
                 <MessageSquare
                   size={48}
@@ -304,38 +328,38 @@ const Reviews = () => {
                 initial="initial"
                 animate="animate"
               >
-                {userReviews.map((review, index) => (
-                  <motion.div
-                    key={review._id}
-                    className="bg-white border border-gray-200 rounded-lg p-6"
-                    variants={fadeInUp}
-                    transition={{ delay: index * 0.1 }}
-                  >
-                    <div className="flex justify-between items-start mb-4">
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-3 mb-2">
-                          <h3 className="text-lg font-semibold text-gray-800">
-                            {review.productId?.itemName || "Product Review"}
-                          </h3>
-                          {renderStars(review.rating)}
-                        </div>
-                        <p className="text-gray-700 mb-3">
-                          {review.reviewText}
-                        </p>
-                        <div className="flex items-center space-x-4 text-sm text-gray-500">
-                          <span>
-                            Seller:{" "}
-                            {review.sellerId?.name || review.sellerId?.username}
-                          </span>
-                          <span>•</span>
-                          <span>
-                            {new Date(review.createdAt).toLocaleDateString()}
-                          </span>
+                {Array.isArray(userReviews) &&
+                  userReviews.map((review, index) => (
+                    <motion.div
+                      key={review._id}
+                      className="bg-white border border-gray-200 rounded-lg p-6"
+                      variants={fadeInUp}
+                      transition={{ delay: index * 0.1 }}
+                    >
+                      <div className="flex justify-between items-start mb-4">
+                        <div className="flex-1">
+                          <div className="flex items-center space-x-3 mb-2">
+                            <h3 className="text-lg font-semibold text-gray-800">
+                              {review.orderId?.itemName || "Product Review"}
+                            </h3>
+                            {renderStars(review.rating)}
+                          </div>
+                          <p className="text-gray-700 mb-3">{review.comment}</p>
+                          <div className="flex items-center space-x-4 text-sm text-gray-500">
+                            <span>
+                              Seller:{" "}
+                              {review.toUserId?.name ||
+                                review.toUserId?.username}
+                            </span>
+                            <span>•</span>
+                            <span>
+                              {new Date(review.createdAt).toLocaleDateString()}
+                            </span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </motion.div>
-                ))}
+                    </motion.div>
+                  ))}
               </motion.div>
             )}
           </motion.div>

@@ -7,7 +7,7 @@ export const reviewsAPI = {
   // Submit review
   submitReview: async (reviewData) => {
     try {
-      const response = await apiClient.post("/reviews/submit", reviewData);
+      const response = await apiClient.post("/reviews/create", reviewData);
       return response.data;
     } catch (error) {
       console.error("Error submitting review:", error);
@@ -18,9 +18,10 @@ export const reviewsAPI = {
   // Get user's reviews
   getUserReviews: async (filters = {}) => {
     try {
-      const response = await apiClient.get("/reviews/user", {
+      const response = await apiClient.get("/reviews/my-reviews", {
         params: filters,
       });
+      console.log(response.data); // Debugging line to log response data
       return response.data;
     } catch (error) {
       console.error("Error fetching user reviews:", error);
@@ -48,6 +49,28 @@ export const reviewsAPI = {
       return response.data;
     } catch (error) {
       console.error("Error fetching product reviews:", error);
+      throw error;
+    }
+  },
+
+  // Get all reviews for a specific seller
+  getSellerReviews: async (sellerId) => {
+    try {
+      const response = await apiClient.get(`/reviews/seller/${sellerId}`);
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching seller reviews:", error);
+      throw error;
+    }
+  },
+
+  // Get reviewable items for the current user
+  getReviewableItems: async () => {
+    try {
+      const response = await apiClient.get("/reviews/reviewable");
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching reviewable items:", error);
       throw error;
     }
   },

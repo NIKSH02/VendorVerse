@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
+import ProductReviews from "../components/ProductReviews";
 import {
   ChevronLeft,
   ChevronRight,
@@ -152,20 +153,6 @@ const ProductDetailPage = () => {
   const selectPresetQuantity = (quantity) => {
     setSelectedQuantity(quantity);
   };
-
-  // Mock reviews data (since backend doesn't have reviews yet)
-  const mockReviews = [
-    {
-      author: "Verified Buyer",
-      rating: 5,
-      comment: "Excellent quality product, highly recommended!",
-    },
-    {
-      author: "Regular Customer",
-      rating: 4,
-      comment: "Good service and fresh products. Will order again.",
-    },
-  ];
 
   const handlePrev = () => {
     setCurrentImageIndex((prevIndex) =>
@@ -789,59 +776,14 @@ const ProductDetailPage = () => {
             </div>
 
             {/* Reviews Section */}
-            <div className="border-t border-gray-200 p-6 lg:p-8">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl font-bold text-gray-900">
-                  Customer Reviews
-                </h3>
-                <button
-                  onClick={() => setShowFullReviews(!showFullReviews)}
-                  className="flex items-center text-orange-600 hover:text-orange-700 font-semibold transition-colors"
-                >
-                  <Star size={18} className="mr-2" fill="currentColor" />
-                  {mockReviews.length} Reviews
-                </button>
-              </div>
-
-              <AnimatePresence>
-                {showFullReviews && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: "auto" }}
-                    exit={{ opacity: 0, height: 0 }}
-                    transition={{ duration: 0.3 }}
-                    className="space-y-4 overflow-hidden"
-                  >
-                    {mockReviews.map((review, index) => (
-                      <div
-                        key={index}
-                        className="bg-gray-50 p-6 rounded-xl border border-gray-200"
-                      >
-                        <div className="flex items-center justify-between mb-3">
-                          <span className="font-semibold text-gray-900">
-                            {review.author}
-                          </span>
-                          <div className="flex items-center">
-                            {[...Array(review.rating)].map((_, i) => (
-                              <Star
-                                key={i}
-                                size={16}
-                                fill="currentColor"
-                                className="text-yellow-400"
-                              />
-                            ))}
-                            <span className="ml-2 text-sm text-gray-500">
-                              ({review.rating}/5)
-                            </span>
-                          </div>
-                        </div>
-                        <p className="text-gray-700">{review.comment}</p>
-                      </div>
-                    ))}
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
+            <ProductReviews
+              listingId={product._id || product.id}
+              sellerId={
+                product.sellerId?._id || product.sellerId || product.userId
+              }
+              showFullReviews={showFullReviews}
+              onToggleReviews={() => setShowFullReviews(!showFullReviews)}
+            />
           </div>
         </div>
       </div>
