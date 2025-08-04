@@ -1,6 +1,7 @@
 import React from "react";
 import { AuthProvider } from "./context/AuthContext";
 import { OrderProvider } from "./context/OrderContext";
+import { NotificationProvider } from "./context/NotificationContext";
 import AuthPage from "./pages/AuthPage";
 import CommunityRequests from "./pages/CommunityRequests";
 import ProductDetail from "./pages/ProductDetail";
@@ -23,6 +24,7 @@ import OrdersReceived from "./pages/OrdersReceived";
 import OrdersPlaced from "./pages/OrdersPlaced";
 import Reviews from "./pages/Reviews";
 import Notifications from "./pages/Notifications";
+import NotificationTest from "./pages/NotificationTest";
 import { useAuth } from "./hooks/useAuth";
 import PersonalChatUI from "./pages/PersonalChatUi";
 
@@ -86,130 +88,140 @@ function App() {
   return (
     <ErrorBoundary>
       <AuthProvider>
-        <OrderProvider>
-          <Router>
-            <Routes>
-              {/* Public Routes - No authentication required */}
-              <Route path="/" element={<LandingPage />} />
-              <Route path="/about" element={<AboutPage />} />
-              <Route path="/authpage" element={<AuthPage />} />
-              <Route path="/global" element={<CommunityRequests />} />
-              <Route path="/productdetail" element={<ProductDetail />} />
-              {/* Protected Routes - Authentication required */}
-              <Route
-                path="/Global"
-                element={
-                  <ProtectedRoute>
-                    <CommunityRequests />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/locationchat"
-                element={
-                  <ProtectedRoute>
-                    <LocationChat />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/productdetail"
-                element={
-                  <ProtectedRoute>
-                    <ProductDetail />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/all-items"
-                element={
-                  <ProtectedRoute>
-                    <AllItemsPage />
-                  </ProtectedRoute>
-                }
-              />
+        <NotificationProvider>
+          <OrderProvider>
+            <Router>
+              <Routes>
+                {/* Public Routes - No authentication required */}
+                <Route path="/" element={<LandingPage />} />
+                <Route path="/about" element={<AboutPage />} />
+                <Route path="/authpage" element={<AuthPage />} />
+                <Route path="/global" element={<CommunityRequests />} />
+                <Route path="/productdetail" element={<ProductDetail />} />
+                {/* Protected Routes - Authentication required */}
+                <Route
+                  path="/Global"
+                  element={
+                    <ProtectedRoute>
+                      <CommunityRequests />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/locationchat"
+                  element={
+                    <ProtectedRoute>
+                      <LocationChat />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/productdetail"
+                  element={
+                    <ProtectedRoute>
+                      <ProductDetail />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/all-items"
+                  element={
+                    <ProtectedRoute>
+                      <AllItemsPage />
+                    </ProtectedRoute>
+                  }
+                />
 
-              <Route
-                path="/Profile"
-                element={<Navigate to="/dashboard/profile" replace />}
-              />
+                <Route
+                  path="/Profile"
+                  element={<Navigate to="/dashboard/profile" replace />}
+                />
 
-              {/* New Modular Dashboard Routes */}
-              <Route
-                path="/dashboard/profile"
-                element={
-                  <ProtectedRoute>
-                    <Profile />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/dashboard/listings"
-                element={
-                  <ProtectedRoute>
-                    <MyListings />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/dashboard/my-listings"
-                element={
-                  <ProtectedRoute>
-                    <MyListings />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/dashboard/add-product"
-                element={
-                  <ProtectedRoute>
-                    <AddProduct />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/dashboard/edit-product/:productId"
-                element={
-                  <ProtectedRoute>
-                    <EditProduct />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/dashboard/orders-received"
-                element={
-                  <ProtectedRoute>
-                    <OrdersReceived />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/dashboard/orders-placed"
-                element={
-                  <ProtectedRoute>
-                    <OrdersPlaced />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/dashboard/reviews"
-                element={
-                  <ProtectedRoute>
-                    <Reviews />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/dashboard/notifications"
-                element={
-                  <ProtectedRoute>
-                    <Notifications />
-                  </ProtectedRoute>
-                }
-              />
-            </Routes>
-          </Router>
-        </OrderProvider>
+                {/* New Modular Dashboard Routes */}
+                <Route
+                  path="/dashboard/profile"
+                  element={
+                    <ProtectedRoute>
+                      <Profile />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/dashboard/listings"
+                  element={
+                    <ProtectedRoute>
+                      <MyListings />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/dashboard/my-listings"
+                  element={
+                    <ProtectedRoute>
+                      <MyListings />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/dashboard/add-product"
+                  element={
+                    <ProtectedRoute>
+                      <AddProduct />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/dashboard/edit-product/:productId"
+                  element={
+                    <ProtectedRoute>
+                      <EditProduct />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/dashboard/orders-received"
+                  element={
+                    <ProtectedRoute>
+                      <OrdersReceived />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/dashboard/orders-placed"
+                  element={
+                    <ProtectedRoute>
+                      <OrdersPlaced />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/dashboard/reviews"
+                  element={
+                    <ProtectedRoute>
+                      <Reviews />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/dashboard/notifications"
+                  element={
+                    <ProtectedRoute>
+                      <Notifications />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/dashboard/notification-test"
+                  element={
+                    <ProtectedRoute>
+                      <NotificationTest />
+                    </ProtectedRoute>
+                  }
+                />
+              </Routes>
+            </Router>
+          </OrderProvider>
+        </NotificationProvider>
       </AuthProvider>
     </ErrorBoundary>
   );

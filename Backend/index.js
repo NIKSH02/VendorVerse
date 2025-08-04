@@ -19,13 +19,19 @@ const app = express();
 // socket server
 const server = http.createServer(app);
 
-app.set('trust proxy', 1);
+app.set("trust proxy", 1);
 
 // Socket.io setup with CORS
 const io = socketIo(server, {
   cors: {
-    origin: ["http://localhost:5173", "http://localhost:5174", "https://cc5wnhxq-5001.inc1.devtunnels.ms", "https://cc5wnhxq-5173.inc1.devtunnels.ms", 
-      "https://vendorverse-uzqz.onrender.com", "https://vendorverse-eight.vercel.app"],
+    origin: [
+      "http://localhost:5173",
+      "http://localhost:5174",
+      "https://cc5wnhxq-5001.inc1.devtunnels.ms",
+      "https://cc5wnhxq-5173.inc1.devtunnels.ms",
+      "https://vendorverse-uzqz.onrender.com",
+      "https://vendorverse-eight.vercel.app",
+    ],
     methods: ["GET", "POST"],
     credentials: true,
   },
@@ -33,11 +39,21 @@ const io = socketIo(server, {
 });
 
 // CORS configuration
-app.use(Cors({
-    origin: ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:5001', 'https://cc5wnhxq-5001.inc1.devtunnels.ms', "https://cc5wnhxq-5173.inc1.devtunnels.ms", "https://vendorverse-uzqz.onrender.com", "https://vendorverse-eight.vercel.app"],
+app.use(
+  Cors({
+    origin: [
+      "http://localhost:5173",
+      "http://localhost:5174",
+      "http://localhost:5001",
+      "https://cc5wnhxq-5001.inc1.devtunnels.ms",
+      "https://cc5wnhxq-5173.inc1.devtunnels.ms",
+      "https://vendorverse-uzqz.onrender.com",
+      "https://vendorverse-eight.vercel.app",
+    ],
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS']
-}));
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  })
+);
 // app.options('*', Cors()); // Enable pre-flight for all routes
 
 // Middleware to parse JSON
@@ -92,12 +108,14 @@ const negotiationRouter = require("./src/routes/negotiation.route");
 
 // Import controllers and socket handlers
 const locationChatSocket = require("./src/locationChatSocket.js");
+const NotificationSocketHandler = require("./src/utils/notificationSocket.js");
+const notificationService = require("./src/utils/notificationService.js");
 const groupchatroute = require("./src/routes/groupchat.route.js");
 
-// chat route 
-app.use('/api/', limiter);
-app.use('/api/messages', messageLimiter);
-app.use('/api/messages', groupchatroute);
+// chat route
+app.use("/api/", limiter);
+app.use("/api/messages", messageLimiter);
+app.use("/api/messages", groupchatroute);
 
 // Define routes
 app.use("/api/users", userRouter); // Mount the user router at the correct endpoint
@@ -131,6 +149,17 @@ app.get("/health", (req, res) => {
 // Socket.io connection handling
 const socketHandler = locationChatSocket(io);
 
+// Initialize notification socket handler
+const notificationSocketHandler = new NotificationSocketHandler(io);
+
+// Set up notification service with socket handler
+notificationService.setSocketHandler(notificationSocketHandler);
+
+// Make notification service globally available
+global.notificationService = notificationService;
+
+console.log("🔔 Real-time notification system initialized");
+
 // Graceful shutdown handling
 const gracefulShutdown = (signal) => {
   console.log(`\n${signal} received. Starting graceful shutdown...`);
@@ -151,6 +180,12 @@ const gracefulShutdown = (signal) => {
       if (socketHandler && socketHandler.cleanup) {
         socketHandler.cleanup();
         console.log("Socket connections cleaned up");
+      }
+
+      // Cleanup notification socket connections
+      if (notificationSocketHandler && notificationSocketHandler.cleanup) {
+        notificationSocketHandler.cleanup();
+        console.log("Notification socket connections cleaned up");
       }
 
       console.log("✅ Graceful shutdown completed");

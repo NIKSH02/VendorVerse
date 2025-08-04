@@ -81,14 +81,23 @@ const ReviewSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// Simple compound indexes with sparse option (MongoDB standard approach)
+// Proper compound indexes to prevent duplicate reviews
+// For order reviews: one review per user per order (only when orderId exists)
 ReviewSchema.index(
   { fromUserId: 1, orderId: 1 },
-  { unique: true, sparse: true }
+  {
+    unique: true,
+    partialFilterExpression: { orderId: { $type: "objectId" } },
+  }
 );
+
+// For sample reviews: one review per user per sample (only when sampleId exists)
 ReviewSchema.index(
   { fromUserId: 1, sampleId: 1 },
-  { unique: true, sparse: true }
+  {
+    unique: true,
+    partialFilterExpression: { sampleId: { $type: "objectId" } },
+  }
 );
 
 // Indexes for efficient queries

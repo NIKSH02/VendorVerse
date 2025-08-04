@@ -140,6 +140,56 @@ const createReview = asyncHandler(async (req, res) => {
 
   await review.save();
 
+  // Create notification for the reviewed user
+  try {
+    const Notification = require("../models/Notification.model");
+    const User = require("../models/User.model");
+
+    // Get the full user details to ensure we have name/username
+    const fromUser = await User.findById(req.user._id).select("name username");
+    const displayName = fromUser.name || fromUser.username || "Someone";
+
+    await Notification.create({
+      userId: toUserId,
+      type: "review_received",
+      title: "New Review Received",
+      message: `${displayName} left a ${rating}-star review for your ${reviewType}`,
+      data: {
+        reviewId: review._id,
+        fromUserId: req.user._id,
+        fromUserName: displayName,
+        rating,
+        reviewType,
+        targetId,
+        comment:
+          comment.substring(0, 100) + (comment.length > 100 ? "..." : ""),
+      },
+      actionRequired: false,
+      priority: rating >= 4 ? "medium" : rating >= 3 ? "low" : "high",
+      category: "order",
+    });
+
+    // Also send real-time notification via socket if available
+    if (global.notificationService) {
+      await global.notificationService.notifyReviewReceived(toUserId, {
+        reviewId: review._id,
+        fromUserName: displayName,
+        rating,
+        reviewType,
+        comment:
+          comment.substring(0, 100) + (comment.length > 100 ? "..." : ""),
+      });
+    }
+
+    console.log("✅ Review notification created successfully");
+  } catch (notificationError) {
+    console.error(
+      "❌ Failed to create review notification:",
+      notificationError
+    );
+    // Don't fail the review creation if notification fails
+  }
+
   // Populate review for response
   await review.populate([
     { path: "fromUserId", select: "name username" },

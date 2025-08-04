@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import DashboardLayout from "../layouts/DashboardLayout";
 import {
@@ -13,7 +13,12 @@ import {
   Truck,
   MessageSquare,
   Settings,
+  RefreshCw,
+  Wifi,
+  WifiOff,
 } from "lucide-react";
+import { useNotifications } from "../context/NotificationContext";
+import toast from "react-hot-toast";
 
 // Animation variants
 const fadeInUp = {
@@ -36,91 +41,74 @@ const scaleOnHover = {
 };
 
 const Notifications = () => {
-  const [notifications, setNotifications] = useState([
-    {
-      id: 1,
-      type: "order",
-      title: "New Order Received",
-      message: "You have received a new order for Fresh Tomatoes (5kg)",
-      time: "2 minutes ago",
-      read: false,
-      icon: ShoppingCart,
-      color: "bg-green-500",
-    },
-    {
-      id: 2,
-      type: "delivery",
-      title: "Order Shipped",
-      message: "Your order #12345 has been shipped and is on the way",
-      time: "1 hour ago",
-      read: false,
-      icon: Truck,
-      color: "bg-blue-500",
-    },
-    {
-      id: 3,
-      type: "review",
-      title: "New Review",
-      message: "Someone left a 5-star review for your product",
-      time: "3 hours ago",
-      read: true,
-      icon: Star,
-      color: "bg-yellow-500",
-    },
-    {
-      id: 4,
-      type: "message",
-      title: "New Message",
-      message: "You have a new message from buyer about Wheat Seeds",
-      time: "1 day ago",
-      read: true,
-      icon: MessageSquare,
-      color: "bg-purple-500",
-    },
-    {
-      id: 5,
-      type: "system",
-      title: "Profile Updated",
-      message: "Your profile information has been successfully updated",
-      time: "2 days ago",
-      read: true,
-      icon: Settings,
-      color: "bg-gray-500",
-    },
-  ]);
+  const {
+    notifications,
+    notificationSummary,
+    isConnected,
+    loading,
+    markNotificationAsRead,
+    markAllNotificationsAsRead,
+    loadNotifications,
+    unreadCount,
+  } = useNotifications();
 
   const [filter, setFilter] = useState("all");
   const [showActions, setShowActions] = useState(null);
+  const [localNotifications, setLocalNotifications] = useState([]);
+  const [hasLoadedInitial, setHasLoadedInitial] = useState(false);
 
-  const unreadCount = notifications.filter((n) => !n.read).length;
+  // Load initial notifications from API
+  useEffect(() => {
+    const loadInitialNotifications = async () => {
+      try {
+        await loadNotifications({ page: 1, limit: 20 });
+        setHasLoadedInitial(true);
+      } catch (error) {
+        console.error("Error loading initial notifications:", error);
+        toast.error("Failed to load notifications");
+      }
+    };
 
-  const filteredNotifications = notifications.filter((notification) => {
+    if (!hasLoadedInitial) {
+      loadInitialNotifications();
+    }
+  }, [loadNotifications, hasLoadedInitial]);
+
+  // Combine real-time notifications with loaded notifications
+  useEffect(() => {
+    setLocalNotifications(notifications);
+  }, [notifications]);
+
+  const filteredNotifications = localNotifications.filter((notification) => {
     if (filter === "all") return true;
-    if (filter === "unread") return !notification.read;
-    return notification.type === filter;
+    if (filter === "unread") return !notification.isRead;
+
+    // Special handling for review filter
+    if (filter === "review") {
+      return notification.type === "review_received";
+    }
+
+    // Check for exact type match or category match
+    return notification.type === filter || notification.category === filter;
   });
 
-  const markAsRead = (id) => {
-    setNotifications(
-      notifications.map((notification) =>
-        notification.id === id ? { ...notification, read: true } : notification
-      )
-    );
+  const handleMarkAsRead = (notification) => {
+    if (!notification.isRead) {
+      markNotificationAsRead(notification._id);
+    }
   };
 
-  const markAllAsRead = () => {
-    setNotifications(
-      notifications.map((notification) => ({
-        ...notification,
-        read: true,
-      }))
-    );
+  const handleMarkAllAsRead = () => {
+    markAllNotificationsAsRead();
+    toast.success("All notifications marked as read");
   };
 
   const deleteNotification = (id) => {
-    setNotifications(
-      notifications.filter((notification) => notification.id !== id)
+    // Remove from local state (you can implement API call here)
+    setLocalNotifications((prev) =>
+      prev.filter((notification) => notification._id !== id)
     );
+    toast.success("Notification deleted");
   };
 
   const clearAllNotifications = () => {
@@ -129,34 +117,79 @@ const Notifications = () => {
         "Are you sure you want to clear all notifications? This action cannot be undone."
       )
     ) {
-      setNotifications([]);
+      setLocalNotifications([]);
+      toast.success("All notifications cleared");
+    }
+  };
+
+  const refreshNotifications = async () => {
+    try {
+      await loadNotifications({ page: 1, limit: 20 });
+      toast.success("Notifications refreshed");
+    } catch (error) {
+      toast.error("Failed to refresh notifications");
     }
   };
 
   const getFilterOptions = () => [
-    { value: "all", label: "All", count: notifications.length },
+    { value: "all", label: "All", count: localNotifications.length },
     { value: "unread", label: "Unread", count: unreadCount },
     {
       value: "order",
       label: "Orders",
-      count: notifications.filter((n) => n.type === "order").length,
+      count: localNotifications.filter((n) => n.category === "order").length,
     },
     {
       value: "delivery",
       label: "Delivery",
-      count: notifications.filter((n) => n.type === "delivery").length,
+      count: localNotifications.filter((n) => n.type === "order_shipped")
+        .length,
     },
     {
       value: "review",
       label: "Reviews",
-      count: notifications.filter((n) => n.type === "review").length,
+      count: localNotifications.filter((n) => n.type === "review_received")
+        .length,
     },
     {
       value: "message",
       label: "Messages",
-      count: notifications.filter((n) => n.type === "message").length,
+      count: localNotifications.filter((n) => n.category === "social").length,
     },
   ];
+
+  const getNotificationIcon = (type) => {
+    const iconMap = {
+      order_placed: ShoppingCart,
+      order_confirmed: Check,
+      order_shipped: Truck,
+      order_completed: Archive,
+      review_received: Star,
+      material_request_response: MessageSquare,
+      system_announcement: Settings,
+      payment_received: Star,
+    };
+    return iconMap[type] || Bell;
+  };
+
+  const getNotificationColor = (notification) => {
+    if (notification.priority === "urgent") return "bg-red-500";
+    if (notification.priority === "high") return "bg-orange-500";
+    if (notification.priority === "medium") return "bg-yellow-500";
+    return "bg-blue-500";
+  };
+
+  const formatTimeAgo = (date) => {
+    const now = new Date();
+    const notificationDate = new Date(date);
+    const diffInSeconds = Math.floor((now - notificationDate) / 1000);
+
+    if (diffInSeconds < 60) return "Just now";
+    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
+    if (diffInSeconds < 86400)
+      return `${Math.floor(diffInSeconds / 3600)}h ago`;
+    return `${Math.floor(diffInSeconds / 86400)}d ago`;
+  };
 
   return (
     <DashboardLayout>
@@ -175,7 +208,18 @@ const Notifications = () => {
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.1 }}
           >
-            <Bell size={24} className="text-orange-500" />
+            <div className="flex items-center space-x-2">
+              <Bell size={24} className="text-orange-500" />
+              {isConnected ? (
+                <Wifi size={16} className="text-green-500" title="Connected" />
+              ) : (
+                <WifiOff
+                  size={16}
+                  className="text-red-500"
+                  title="Disconnected"
+                />
+              )}
+            </div>
             <h1 className="text-2xl font-bold text-gray-800">Notifications</h1>
             {unreadCount > 0 && (
               <span className="bg-orange-500 text-white text-xs font-bold px-2 py-1 rounded-full">
@@ -185,10 +229,21 @@ const Notifications = () => {
           </motion.div>
 
           <div className="flex items-center space-x-2">
+            <motion.button
+              className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+              onClick={refreshNotifications}
+              variants={fadeInUp}
+              transition={{ delay: 0.1 }}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              title="Refresh notifications"
+            >
+              <RefreshCw size={18} />
+            </motion.button>
             {unreadCount > 0 && (
               <motion.button
                 className="px-3 py-2 text-sm text-orange-600 hover:text-orange-700 hover:bg-orange-50 rounded-lg transition-colors"
-                onClick={markAllAsRead}
+                onClick={handleMarkAllAsRead}
                 variants={fadeInUp}
                 transition={{ delay: 0.2 }}
                 whileHover={{ scale: 1.05 }}
@@ -242,111 +297,149 @@ const Notifications = () => {
           initial="initial"
           animate="animate"
         >
-          {filteredNotifications.map((notification, index) => {
-            const IconComponent = notification.icon;
-            return (
-              <motion.div
-                key={notification.id}
-                className={`bg-white border rounded-lg p-4 hover:shadow-lg transition-all ${
-                  !notification.read
-                    ? "border-orange-200 bg-orange-50"
-                    : "border-gray-200"
-                }`}
-                variants={fadeInUp}
-                transition={{ delay: index * 0.1 }}
-                {...scaleOnHover}
-              >
-                <div className="flex items-start space-x-4">
-                  {/* Icon */}
-                  <div
-                    className={`p-2 rounded-lg ${notification.color} text-white flex-shrink-0`}
-                  >
-                    <IconComponent size={20} />
-                  </div>
+          {loading && (
+            <div className="flex items-center justify-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
+              <span className="ml-2 text-gray-600">
+                Loading notifications...
+              </span>
+            </div>
+          )}
 
-                  {/* Content */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between mb-1">
-                      <h3
-                        className={`font-semibold ${
-                          !notification.read ? "text-gray-900" : "text-gray-700"
-                        }`}
-                      >
-                        {notification.title}
-                      </h3>
-                      <div className="flex items-center space-x-2">
-                        {!notification.read && (
-                          <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
-                        )}
-                        <span className="text-xs text-gray-500">
-                          {notification.time}
-                        </span>
-                        <div className="relative">
-                          <motion.button
-                            className="p-1 text-gray-400 hover:text-gray-600 rounded"
-                            onClick={() =>
-                              setShowActions(
-                                showActions === notification.id
-                                  ? null
-                                  : notification.id
-                              )
-                            }
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.9 }}
-                          >
-                            <MoreVertical size={16} />
-                          </motion.button>
+          {!loading &&
+            filteredNotifications.map((notification, index) => {
+              const IconComponent = getNotificationIcon(notification.type);
+              const timeAgo =
+                notification.timeAgo || formatTimeAgo(notification.createdAt);
 
-                          <AnimatePresence>
-                            {showActions === notification.id && (
-                              <motion.div
-                                className="absolute right-0 top-8 bg-white border border-gray-200 rounded-lg shadow-lg z-10 py-1 min-w-[150px]"
-                                initial={{ opacity: 0, scale: 0.8 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                exit={{ opacity: 0, scale: 0.8 }}
-                              >
-                                {!notification.read && (
+              return (
+                <motion.div
+                  key={notification._id}
+                  className={`bg-white border rounded-lg p-4 hover:shadow-lg transition-all cursor-pointer ${
+                    !notification.isRead
+                      ? "border-orange-200 bg-orange-50"
+                      : "border-gray-200"
+                  }`}
+                  variants={fadeInUp}
+                  transition={{ delay: index * 0.1 }}
+                  {...scaleOnHover}
+                  onClick={() => handleMarkAsRead(notification)}
+                >
+                  <div className="flex items-start space-x-4">
+                    {/* Icon */}
+                    <div
+                      className={`p-2 rounded-lg ${getNotificationColor(
+                        notification
+                      )} text-white flex-shrink-0`}
+                    >
+                      <IconComponent size={20} />
+                    </div>
+
+                    {/* Content */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-1">
+                        <h3
+                          className={`font-semibold ${
+                            !notification.isRead
+                              ? "text-gray-900"
+                              : "text-gray-700"
+                          }`}
+                        >
+                          {notification.title}
+                        </h3>
+                        <div className="flex items-center space-x-2">
+                          {!notification.isRead && (
+                            <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
+                          )}
+                          <span className="text-xs text-gray-500">
+                            {timeAgo}
+                          </span>
+                          <div className="relative">
+                            <motion.button
+                              className="p-1 text-gray-400 hover:text-gray-600 rounded"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setShowActions(
+                                  showActions === notification._id
+                                    ? null
+                                    : notification._id
+                                );
+                              }}
+                              whileHover={{ scale: 1.1 }}
+                              whileTap={{ scale: 0.9 }}
+                            >
+                              <MoreVertical size={16} />
+                            </motion.button>
+
+                            <AnimatePresence>
+                              {showActions === notification._id && (
+                                <motion.div
+                                  className="absolute right-0 top-8 bg-white border border-gray-200 rounded-lg shadow-lg z-10 py-1 min-w-[150px]"
+                                  initial={{ opacity: 0, scale: 0.8 }}
+                                  animate={{ opacity: 1, scale: 1 }}
+                                  exit={{ opacity: 0, scale: 0.8 }}
+                                >
+                                  {!notification.isRead && (
+                                    <button
+                                      className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleMarkAsRead(notification);
+                                        setShowActions(null);
+                                      }}
+                                    >
+                                      <Check size={14} />
+                                      <span>Mark as read</span>
+                                    </button>
+                                  )}
                                   <button
-                                    className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2"
-                                    onClick={() => {
-                                      markAsRead(notification.id);
+                                    className="w-full px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center space-x-2"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      deleteNotification(notification._id);
                                       setShowActions(null);
                                     }}
                                   >
-                                    <Check size={14} />
-                                    <span>Mark as read</span>
+                                    <X size={14} />
+                                    <span>Delete</span>
                                   </button>
-                                )}
-                                <button
-                                  className="w-full px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center space-x-2"
-                                  onClick={() => {
-                                    deleteNotification(notification.id);
-                                    setShowActions(null);
-                                  }}
-                                >
-                                  <X size={14} />
-                                  <span>Delete</span>
-                                </button>
-                              </motion.div>
-                            )}
-                          </AnimatePresence>
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                    <p
-                      className={`text-sm ${
-                        !notification.read ? "text-gray-800" : "text-gray-600"
-                      }`}
-                    >
-                      {notification.message}
-                    </p>
-                  </div>
-                </div>
-              </motion.div>
-            );
-          })}
+                      <p
+                        className={`text-sm ${
+                          !notification.isRead
+                            ? "text-gray-800"
+                            : "text-gray-600"
+                        }`}
+                      >
+                        {notification.message}
+                      </p>
 
-          {filteredNotifications.length === 0 && (
+                      {/* Show priority indicator for high/urgent notifications */}
+                      {(notification.priority === "high" ||
+                        notification.priority === "urgent") && (
+                        <div
+                          className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium mt-2 ${
+                            notification.priority === "urgent"
+                              ? "bg-red-100 text-red-800"
+                              : "bg-orange-100 text-orange-800"
+                          }`}
+                        >
+                          {notification.priority === "urgent" ? "🚨" : "⚠️"}{" "}
+                          {notification.priority.toUpperCase()}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </motion.div>
+              );
+            })}
+
+          {!loading && filteredNotifications.length === 0 && (
             <motion.div
               className="text-center py-12 bg-white rounded-lg border border-gray-200"
               variants={fadeInUp}
@@ -354,9 +447,19 @@ const Notifications = () => {
               <Bell size={48} className="mx-auto text-gray-400 mb-4" />
               <p className="text-gray-600">
                 {filter === "all"
-                  ? "No notifications yet."
+                  ? isConnected
+                    ? "No notifications yet. You'll see them here when they arrive!"
+                    : "Unable to load notifications. Check your connection."
                   : `No ${filter} notifications found.`}
               </p>
+              {!isConnected && (
+                <button
+                  onClick={refreshNotifications}
+                  className="mt-4 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
+                >
+                  Retry Connection
+                </button>
+              )}
             </motion.div>
           )}
         </motion.div>

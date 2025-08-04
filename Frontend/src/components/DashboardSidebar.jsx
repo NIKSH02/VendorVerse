@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate, useLocation } from "react-router-dom";
 import useAuth from "../hooks/useAuth";
+import { useNotifications } from "../context/NotificationContext";
 import {
   User,
   Package,
@@ -26,6 +27,7 @@ const DashboardSidebar = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout } = useAuth();
+  const { unreadCount, totalNotifications } = useNotifications();
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   const navigationItems = [
@@ -185,6 +187,26 @@ const DashboardSidebar = () => {
                   >
                     <item.icon size={20} />
                     <span className="font-medium">{item.label}</span>
+
+                    {/* Notification badge */}
+                    {item.id === "notifications" && totalNotifications > 0 && (
+                      <motion.span
+                        className={`ml-auto text-white text-xs font-bold px-2 py-1 rounded-full min-w-[20px] text-center ${
+                          unreadCount > 0 ? "bg-orange-500" : "bg-gray-400"
+                        }`}
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        transition={{
+                          type: "spring",
+                          stiffness: 500,
+                          damping: 30,
+                        }}
+                        title={`${totalNotifications} total, ${unreadCount} unread`}
+                      >
+                        {totalNotifications > 99 ? "99+" : totalNotifications}
+                      </motion.span>
+                    )}
+
                     {isActive(item.path) && (
                       <motion.div
                         className="absolute right-0 top-0 bottom-0 w-1 bg-orange-500 rounded-l"

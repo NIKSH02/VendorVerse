@@ -121,6 +121,27 @@ const placeOrder = asyncHandler(async (req, res) => {
 
   await order.save();
 
+  // Send notification to seller about new order
+  try {
+    if (global.notificationService) {
+      await global.notificationService.notifyOrderPlaced(
+        req.user._id, // buyerId
+        sellerId,
+        {
+          _id: order._id,
+          itemName: product.itemName,
+          quantity: order.quantity,
+          unit: order.unit,
+          totalPrice: order.totalPrice,
+          buyerName: req.user.name || req.user.username,
+        }
+      );
+    }
+  } catch (notificationError) {
+    console.error("Failed to send order notification:", notificationError);
+    // Don't fail the order creation if notification fails
+  }
+
   // Populate order details for response
   await order.populate([
     { path: "buyerId", select: "name username phone email" },
@@ -333,6 +354,65 @@ const updateOrderStatus = asyncHandler(async (req, res) => {
   }
 
   await order.save();
+
+  // Send notifications based on action
+  try {
+    if (global.notificationService) {
+      const buyerId = order.buyerId._id || order.buyerId;
+      const sellerId = order.sellerId._id || order.sellerId;
+
+      switch (action) {
+        case "accept":
+          await global.notificationService.notifyOrderConfirmed(
+            buyerId,
+            sellerId,
+            {
+              _id: order._id,
+              itemName: order.itemName,
+              sellerName: req.user.name || req.user.username,
+            }
+          );
+          break;
+        case "ship":
+          await global.notificationService.notifyOrderShipped(buyerId, {
+            _id: order._id,
+            itemName: order.itemName,
+            trackingInfo: order.trackingInfo,
+          });
+          break;
+        case "complete":
+          await global.notificationService.notifyOrderCompleted(
+            buyerId,
+            sellerId,
+            {
+              _id: order._id,
+              itemName: order.itemName,
+              sellerName: req.user.name || req.user.username,
+              buyerName: order.buyerId.name || order.buyerId.username,
+            }
+          );
+          break;
+        case "cancel":
+          await global.notificationService.notifyOrderCancelled(
+            buyerId,
+            sellerId,
+            {
+              _id: order._id,
+              itemName: order.itemName,
+              cancelReason: order.cancelReason,
+              cancelledBy: req.user.name || req.user.username,
+            }
+          );
+          break;
+      }
+    }
+  } catch (notificationError) {
+    console.error(
+      "Failed to send order status notification:",
+      notificationError
+    );
+    // Don't fail the order update if notification fails
+  }
 
   await order.populate([
     { path: "buyerId", select: "name username phone email" },
