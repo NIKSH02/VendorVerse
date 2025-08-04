@@ -906,11 +906,97 @@ const getUserFinancialSummary = asyncHandler(async (req, res) => {
     );
 });
 
+// Cancel order by buyer
+const cancelOrderByBuyer = asyncHandler(async (req, res) => {
+  const { orderId } = req.params;
+  const { reason } = req.body;
+
+  const order = await Order.findById(orderId);
+  if (!order) {
+    throw new ApiError(404, "Order not found");
+  }
+
+  // Only the buyer can cancel their own order
+  if (order.buyerId.toString() !== req.user._id.toString()) {
+    throw new ApiError(403, "You can only cancel your own orders");
+  }
+
+  // Check if order can be cancelled by buyer
+  const cancellableStatuses = ["pending", "confirmed"];
+  if (!cancellableStatuses.includes(order.status)) {
+    throw new ApiError(
+      400,
+      `Order cannot be cancelled. Current status: ${order.status}. Orders can only be cancelled when pending or confirmed.`
+    );
+  }
+
+  // Update order status
+  order.status = "cancelled";
+  order.cancelReason = reason || "Cancelled by buyer";
+  order.canceledAt = new Date();
+  order.cancelledByBuyer = true;
+
+  await order.save();
+
+  // Send notifications to seller about order cancellation
+  try {
+    if (global.notificationService) {
+      // Get buyer details for the notification
+      const buyerName = req.user.name || req.user.username || "A buyer";
+
+      // Notify seller about cancellation
+      await global.notificationService.notifyOrderCancelled(
+        order.buyerId, // from (buyer who cancelled)
+        order.sellerId, // to (seller to be notified)
+        {
+          _id: order._id,
+          itemName: order.itemName,
+          quantity: order.quantity,
+          unit: order.unit,
+          totalPrice: order.totalPrice,
+          cancelReason: order.cancelReason,
+          cancelledBy: buyerName,
+        }
+      );
+
+      // Also send confirmation to buyer that cancellation was successful
+      await global.notificationService.notifyOrderCancellationConfirmed(
+        order.buyerId, // to (buyer who cancelled)
+        {
+          _id: order._id,
+          itemName: order.itemName,
+          quantity: order.quantity,
+          unit: order.unit,
+          cancelReason: order.cancelReason,
+        }
+      );
+    }
+  } catch (notificationError) {
+    console.error(
+      "Failed to send order cancellation notification:",
+      notificationError
+    );
+    // Don't fail the order cancellation if notification fails
+  }
+
+  // Populate order details for response
+  await order.populate([
+    { path: "buyerId", select: "name username phone email" },
+    { path: "sellerId", select: "name username phone email" },
+    { path: "listingId", select: "itemName imageUrl category type" },
+  ]);
+
+  res
+    .status(200)
+    .json(new ApiResponse(200, order, "Order cancelled successfully"));
+});
+
 module.exports = {
   placeOrder,
   getBuyerOrderHistory,
   getSellerOrders,
   updateOrderStatus,
+  cancelOrderByBuyer,
   provideExchangeCode,
   getOrderDetails,
   getOrderDashboard,

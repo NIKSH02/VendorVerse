@@ -16,8 +16,10 @@ import {
   RefreshCw,
   Wifi,
   WifiOff,
+  Ban,
 } from "lucide-react";
 import { useNotifications } from "../context/NotificationContext";
+import { ordersAPI } from "../services/ordersAPI";
 import toast from "react-hot-toast";
 
 // Animation variants
@@ -49,13 +51,15 @@ const Notifications = () => {
     markNotificationAsRead,
     markAllNotificationsAsRead,
     loadNotifications,
+    deleteNotification: contextDeleteNotification,
+    clearAllNotifications: contextClearAllNotifications,
     unreadCount,
   } = useNotifications();
 
   const [filter, setFilter] = useState("all");
   const [showActions, setShowActions] = useState(null);
-  const [localNotifications, setLocalNotifications] = useState([]);
   const [hasLoadedInitial, setHasLoadedInitial] = useState(false);
+  const [temporarilyCleared, setTemporarilyCleared] = useState(false);
 
   // Load initial notifications from API
   useEffect(() => {
@@ -74,23 +78,20 @@ const Notifications = () => {
     }
   }, [loadNotifications, hasLoadedInitial]);
 
-  // Combine real-time notifications with loaded notifications
-  useEffect(() => {
-    setLocalNotifications(notifications);
-  }, [notifications]);
+  const filteredNotifications = temporarilyCleared
+    ? []
+    : notifications.filter((notification) => {
+        if (filter === "all") return true;
+        if (filter === "unread") return !notification.isRead;
 
-  const filteredNotifications = localNotifications.filter((notification) => {
-    if (filter === "all") return true;
-    if (filter === "unread") return !notification.isRead;
+        // Special handling for review filter
+        if (filter === "review") {
+          return notification.type === "review_received";
+        }
 
-    // Special handling for review filter
-    if (filter === "review") {
-      return notification.type === "review_received";
-    }
-
-    // Check for exact type match or category match
-    return notification.type === filter || notification.category === filter;
-  });
+        // Check for exact type match or category match
+        return notification.type === filter || notification.category === filter;
+      });
 
   const handleMarkAsRead = (notification) => {
     if (!notification.isRead) {
@@ -103,27 +104,42 @@ const Notifications = () => {
     toast.success("All notifications marked as read");
   };
 
-  const deleteNotification = (id) => {
-    // Remove from local state (you can implement API call here)
-    setLocalNotifications((prev) =>
-      prev.filter((notification) => notification._id !== id)
-    );
-    toast.success("Notification deleted");
+  const deleteNotification = async (id) => {
+    try {
+      await contextDeleteNotification(id);
+      toast.success("Notification deleted");
+    } catch (error) {
+      console.error("Error deleting notification:", error);
+      toast.error("Failed to delete notification");
+    }
   };
 
-  const clearAllNotifications = () => {
+  const clearAllNotifications = async () => {
     if (
       window.confirm(
-        "Are you sure you want to clear all notifications? This action cannot be undone."
+        "Are you sure you want to temporarily clear all notifications from view? They will reappear when you refresh or reload the page."
       )
     ) {
-      setLocalNotifications([]);
-      toast.success("All notifications cleared");
+      setTemporarilyCleared(true);
+      toast.success("All notifications cleared from view");
+    }
+  };
+
+  const cancelOrder = async (orderId, reason = "") => {
+    try {
+      await ordersAPI.cancelOrder(orderId, reason);
+      toast.success("Order cancelled successfully");
+      // Refresh notifications to show cancellation notification
+      await loadNotifications({ page: 1, limit: 20 });
+    } catch (error) {
+      console.error("Error cancelling order:", error);
+      toast.error(error.response?.data?.message || "Failed to cancel order");
     }
   };
 
   const refreshNotifications = async () => {
     try {
+      setTemporarilyCleared(false); // Reset temporary clear state
       await loadNotifications({ page: 1, limit: 20 });
       toast.success("Notifications refreshed");
     } catch (error) {
@@ -132,29 +148,43 @@ const Notifications = () => {
   };
 
   const getFilterOptions = () => [
-    { value: "all", label: "All", count: localNotifications.length },
-    { value: "unread", label: "Unread", count: unreadCount },
+    {
+      value: "all",
+      label: "All",
+      count: temporarilyCleared ? 0 : notifications.length,
+    },
+    {
+      value: "unread",
+      label: "Unread",
+      count: temporarilyCleared ? 0 : unreadCount,
+    },
     {
       value: "order",
       label: "Orders",
-      count: localNotifications.filter((n) => n.category === "order").length,
+      count: temporarilyCleared
+        ? 0
+        : notifications.filter((n) => n.category === "order").length,
     },
     {
       value: "delivery",
       label: "Delivery",
-      count: localNotifications.filter((n) => n.type === "order_shipped")
-        .length,
+      count: temporarilyCleared
+        ? 0
+        : notifications.filter((n) => n.type === "order_shipped").length,
     },
     {
       value: "review",
       label: "Reviews",
-      count: localNotifications.filter((n) => n.type === "review_received")
-        .length,
+      count: temporarilyCleared
+        ? 0
+        : notifications.filter((n) => n.type === "review_received").length,
     },
     {
       value: "message",
       label: "Messages",
-      count: localNotifications.filter((n) => n.category === "social").length,
+      count: temporarilyCleared
+        ? 0
+        : notifications.filter((n) => n.category === "social").length,
     },
   ];
 
@@ -260,8 +290,23 @@ const Notifications = () => {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
-              Clear all
+              {temporarilyCleared ? "Cleared from view" : "Clear all"}
             </motion.button>
+            {temporarilyCleared && (
+              <motion.button
+                className="px-3 py-2 text-sm text-green-600 hover:text-green-700 hover:bg-green-50 rounded-lg transition-colors"
+                onClick={() => {
+                  setTemporarilyCleared(false);
+                  toast.success("Notifications restored");
+                }}
+                variants={fadeInUp}
+                transition={{ delay: 0.4 }}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                Restore all
+              </motion.button>
+            )}
           </div>
         </div>
 
@@ -392,6 +437,33 @@ const Notifications = () => {
                                       <span>Mark as read</span>
                                     </button>
                                   )}
+
+                                  {/* Cancel Order Option - only for order notifications placed by current user */}
+                                  {(notification.type === "order_placed" ||
+                                    notification.type === "order_confirmed") &&
+                                    notification.data?.orderId && (
+                                      <button
+                                        className="w-full px-3 py-2 text-left text-sm text-orange-600 hover:bg-orange-50 flex items-center space-x-2"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          const reason = prompt(
+                                            "Please provide a reason for cancellation (optional):"
+                                          );
+                                          if (reason !== null) {
+                                            // User didn't click cancel
+                                            cancelOrder(
+                                              notification.data.orderId,
+                                              reason
+                                            );
+                                          }
+                                          setShowActions(null);
+                                        }}
+                                      >
+                                        <Ban size={14} />
+                                        <span>Cancel Order</span>
+                                      </button>
+                                    )}
+
                                   <button
                                     className="w-full px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center space-x-2"
                                     onClick={(e) => {
@@ -446,20 +518,32 @@ const Notifications = () => {
             >
               <Bell size={48} className="mx-auto text-gray-400 mb-4" />
               <p className="text-gray-600">
-                {filter === "all"
+                {temporarilyCleared
+                  ? "All notifications have been temporarily cleared from view."
+                  : filter === "all"
                   ? isConnected
                     ? "No notifications yet. You'll see them here when they arrive!"
                     : "Unable to load notifications. Check your connection."
                   : `No ${filter} notifications found.`}
               </p>
-              {!isConnected && (
+              {temporarilyCleared ? (
+                <button
+                  onClick={() => {
+                    setTemporarilyCleared(false);
+                    toast.success("Notifications restored");
+                  }}
+                  className="mt-4 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+                >
+                  Restore Notifications
+                </button>
+              ) : !isConnected ? (
                 <button
                   onClick={refreshNotifications}
                   className="mt-4 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
                 >
                   Retry Connection
                 </button>
-              )}
+              ) : null}
             </motion.div>
           )}
         </motion.div>

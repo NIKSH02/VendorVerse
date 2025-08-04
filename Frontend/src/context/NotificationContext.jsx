@@ -247,6 +247,61 @@ export const NotificationProvider = ({ children }) => {
     }
   }, []);
 
+  // Function to delete notification
+  const deleteNotification = useCallback(async (notificationId) => {
+    try {
+      // Import here to avoid circular dependency
+      const { notificationsAPI } = await import("../services/notificationsAPI");
+
+      // Delete from backend
+      await notificationsAPI.deleteNotification(notificationId);
+
+      // Remove from local state
+      setNotifications((prev) =>
+        prev.filter((notification) => notification._id !== notificationId)
+      );
+
+      // Update notification summary
+      setNotificationSummary((prev) => ({
+        ...prev,
+        totalNotifications: Math.max(0, prev.totalNotifications - 1),
+        unreadCount: Math.max(0, prev.unreadCount - 1), // Assume deleted notification was unread
+      }));
+
+      return true;
+    } catch (error) {
+      console.error("❌ Error deleting notification:", error);
+      throw error;
+    }
+  }, []);
+
+  // Function to clear all notifications
+  const clearAllNotifications = useCallback(async () => {
+    try {
+      // Import here to avoid circular dependency
+      const { notificationsAPI } = await import("../services/notificationsAPI");
+
+      // Clear from backend
+      await notificationsAPI.clearAllNotifications();
+
+      // Clear local state
+      setNotifications([]);
+
+      // Reset notification summary
+      setNotificationSummary({
+        totalNotifications: 0,
+        unreadCount: 0,
+        actionRequiredCount: 0,
+        highPriorityCount: 0,
+      });
+
+      return true;
+    } catch (error) {
+      console.error("❌ Error clearing notifications:", error);
+      throw error;
+    }
+  }, []);
+
   const value = {
     socket,
     notifications,
@@ -257,6 +312,8 @@ export const NotificationProvider = ({ children }) => {
     markAllNotificationsAsRead,
     refreshNotificationSummary,
     loadNotifications,
+    deleteNotification,
+    clearAllNotifications,
     unreadCount: notificationSummary.unreadCount,
     totalNotifications: notificationSummary.totalNotifications,
     actionRequiredCount: notificationSummary.actionRequiredCount,

@@ -98,6 +98,19 @@ export const ordersAPI = {
     }
   },
 
+  // Cancel order by buyer
+  cancelOrder: async (orderId, reason = "") => {
+    try {
+      const response = await apiClient.patch(`/orders/${orderId}/cancel`, {
+        reason,
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Error cancelling order:", error);
+      throw error;
+    }
+  },
+
   // Get exchange code
   getExchangeCode: async (orderId) => {
     try {

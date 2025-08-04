@@ -5,6 +5,7 @@ const {
   getBuyerOrderHistory,
   getSellerOrders,
   updateOrderStatus,
+  cancelOrderByBuyer,
   provideExchangeCode,
   getOrderDetails,
   getOrderDashboard,
@@ -24,6 +25,7 @@ router.get("/seller/orders", getSellerOrders); // Get seller's incoming orders (
 router.get("/all", getAllUserOrders); // Get all orders for user (both buyer & seller)
 router.get("/reviewable", getReviewableOrders); // Get orders that can be reviewed
 router.patch("/:orderId/status", updateOrderStatus); // Update order status (seller: accept, process, ship, complete, cancel)
+router.patch("/:orderId/cancel", cancelOrderByBuyer); // Cancel order (buyer only)
 router.get("/:orderId/exchange-code", provideExchangeCode); // Get exchange code (buyer)
 router.get("/financial/summary", getUserFinancialSummary); // Get financial summary for profile
 router.get("/dashboard", getOrderDashboard); // Get order dashboard/summary

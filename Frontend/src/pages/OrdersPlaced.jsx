@@ -9,9 +9,11 @@ import {
   Clock,
   Truck,
   CheckCircle,
+  X,
 } from "lucide-react";
 import { useOrders } from "../context/OrderContext";
 import { useNavigate } from "react-router-dom";
+import { ordersAPI } from "../services/ordersAPI";
 import toast from "react-hot-toast";
 
 // Animation variants
@@ -49,6 +51,10 @@ const OrdersPlaced = () => {
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [exchangeCodeData, setExchangeCodeData] = useState(null);
   const [filterStatus, setFilterStatus] = useState("all");
+  const [cancellingOrder, setCancellingOrder] = useState(null);
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [cancelReason, setCancelReason] = useState("");
+  const [orderToCancel, setOrderToCancel] = useState(null);
 
   // Fetch orders on component mount
   useEffect(() => {
@@ -96,16 +102,34 @@ const OrdersPlaced = () => {
     const { status } = order;
 
     switch (status) {
+      case "pending":
+      case "confirmed":
+        return {
+          action: "cancel",
+          label: "Cancel Order",
+          icon: X,
+          variant: "danger",
+        };
       case "processing":
       case "shipped":
-        return { action: "viewCode", label: "View Exchange Code", icon: Eye };
+        return {
+          action: "viewCode",
+          label: "View Exchange Code",
+          icon: Eye,
+          variant: "primary",
+        };
       case "completed":
         // Check if this order is in reviewable orders
         const isReviewable = reviewableOrders.some(
           (ro) => ro._id === order._id
         );
         if (isReviewable) {
-          return { action: "review", label: "Add Review", icon: Star };
+          return {
+            action: "review",
+            label: "Add Review",
+            icon: Star,
+            variant: "primary",
+          };
         }
         return null;
       default:
@@ -131,6 +155,39 @@ const OrdersPlaced = () => {
 
   const handleNavigateToReviews = () => {
     navigate("/dashboard/reviews");
+  };
+
+  const handleCancelOrder = async (order) => {
+    setOrderToCancel(order);
+    setShowCancelModal(true);
+    setCancelReason("");
+  };
+
+  const confirmCancelOrder = async () => {
+    if (!orderToCancel) return;
+
+    try {
+      setCancellingOrder(orderToCancel._id);
+      await ordersAPI.cancelOrder(orderToCancel._id, cancelReason);
+      toast.success("Order cancelled successfully");
+      // Refresh orders to update the status
+      fetchBuyerOrders();
+      // Close modal
+      setShowCancelModal(false);
+      setOrderToCancel(null);
+      setCancelReason("");
+    } catch (error) {
+      console.error("Error cancelling order:", error);
+      toast.error(error.response?.data?.message || "Failed to cancel order");
+    } finally {
+      setCancellingOrder(null);
+    }
+  };
+
+  const closeCancelModal = () => {
+    setShowCancelModal(false);
+    setOrderToCancel(null);
+    setCancelReason("");
   };
 
   const filteredOrders = buyerOrders.filter((order) => {
@@ -165,6 +222,7 @@ const OrdersPlaced = () => {
             "processing",
             "shipped",
             "completed",
+            "cancelled",
           ].map((status) => (
             <button
               key={status}
@@ -268,24 +326,27 @@ const OrdersPlaced = () => {
                   </div>
 
                   {/* Exchange Code Display - now available at any status */}
-                  <div className="mb-4 p-3 bg-purple-50 rounded-lg">
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm text-purple-700">
-                        <strong>Exchange Code Available</strong>
+                  {(order.status === "processing" ||
+                    order.status === "shipped") && (
+                    <div className="mb-4 p-3 bg-purple-50 rounded-lg">
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm text-purple-700">
+                          <strong>Exchange Code Available</strong>
+                        </p>
+                        <motion.button
+                          className="text-purple-600 hover:text-purple-800 text-sm font-medium"
+                          onClick={() => handleGetExchangeCode(order)}
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                        >
+                          View Code
+                        </motion.button>
+                      </div>
+                      <p className="text-xs text-purple-500 mt-1">
+                        Share this code with seller upon delivery/pickup
                       </p>
-                      <motion.button
-                        className="text-purple-600 hover:text-purple-800 text-sm font-medium"
-                        onClick={() => handleGetExchangeCode(order)}
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                      >
-                        View Code
-                      </motion.button>
                     </div>
-                    <p className="text-xs text-purple-500 mt-1">
-                      Share this code with seller upon delivery/pickup
-                    </p>
-                  </div>
+                  )}
 
                   <div className="flex justify-between items-center">
                     <p className="text-sm text-gray-500">
@@ -293,19 +354,45 @@ const OrdersPlaced = () => {
                     </p>
                     {nextAction && (
                       <motion.button
-                        className="flex items-center space-x-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-medium transition-colors"
+                        className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-colors ${
+                          nextAction.variant === "danger"
+                            ? "bg-red-500 hover:bg-red-600 text-white"
+                            : "bg-orange-500 hover:bg-orange-600 text-white"
+                        } ${
+                          cancellingOrder === order._id
+                            ? "opacity-50 cursor-not-allowed"
+                            : ""
+                        }`}
                         onClick={() => {
+                          if (cancellingOrder === order._id) return;
+
                           if (nextAction.action === "viewCode") {
                             handleGetExchangeCode(order);
                           } else if (nextAction.action === "review") {
                             handleNavigateToReviews();
+                          } else if (nextAction.action === "cancel") {
+                            handleCancelOrder(order);
                           }
                         }}
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
+                        disabled={cancellingOrder === order._id}
+                        whileHover={{
+                          scale: cancellingOrder === order._id ? 1 : 1.05,
+                        }}
+                        whileTap={{
+                          scale: cancellingOrder === order._id ? 1 : 0.95,
+                        }}
                       >
-                        <nextAction.icon size={16} />
-                        <span>{nextAction.label}</span>
+                        {cancellingOrder === order._id ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                            <span>Cancelling...</span>
+                          </>
+                        ) : (
+                          <>
+                            <nextAction.icon size={16} />
+                            <span>{nextAction.label}</span>
+                          </>
+                        )}
                       </motion.button>
                     )}
                   </div>
@@ -384,6 +471,113 @@ const OrdersPlaced = () => {
                 >
                   Close
                 </motion.button>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Cancel Order Modal */}
+        <AnimatePresence>
+          {showCancelModal && orderToCancel && (
+            <motion.div
+              className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            >
+              <motion.div
+                className="bg-white rounded-lg p-6 max-w-md w-full mx-4"
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.8, opacity: 0 }}
+              >
+                <h3 className="text-lg font-semibold text-gray-800 mb-4">
+                  Cancel Order
+                </h3>
+
+                <div className="mb-6">
+                  <div className="bg-red-50 rounded-lg p-4 mb-4">
+                    <h4 className="font-semibold text-red-800 mb-2">
+                      Order Details:
+                    </h4>
+                    <p className="text-sm text-red-700">
+                      Item: {orderToCancel.itemName}
+                    </p>
+                    <p className="text-sm text-red-700">
+                      Quantity: {orderToCancel.quantity} {orderToCancel.unit}
+                    </p>
+                    <p className="text-sm text-red-700">
+                      Total: ₹{orderToCancel.totalPrice}
+                    </p>
+                    <p className="text-sm text-red-700">
+                      Status: {orderToCancel.status}
+                    </p>
+                  </div>
+
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Reason for Cancellation (Optional)
+                    </label>
+                    <textarea
+                      value={cancelReason}
+                      onChange={(e) => setCancelReason(e.target.value)}
+                      placeholder="Please provide a reason for cancelling this order..."
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 resize-none"
+                      rows={3}
+                      maxLength={200}
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      {cancelReason.length}/200 characters
+                    </p>
+                  </div>
+
+                  <div className="bg-yellow-50 rounded-lg p-3 mb-4">
+                    <p className="text-sm text-yellow-800">
+                      ⚠️ <strong>Warning:</strong> Once cancelled, this order
+                      cannot be restored. The seller will be notified of the
+                      cancellation.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex space-x-3">
+                  <motion.button
+                    className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                    onClick={closeCancelModal}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    disabled={cancellingOrder === orderToCancel._id}
+                  >
+                    Keep Order
+                  </motion.button>
+                  <motion.button
+                    className={`flex-1 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors flex items-center justify-center space-x-2 ${
+                      cancellingOrder === orderToCancel._id
+                        ? "opacity-50 cursor-not-allowed"
+                        : ""
+                    }`}
+                    onClick={confirmCancelOrder}
+                    disabled={cancellingOrder === orderToCancel._id}
+                    whileHover={{
+                      scale: cancellingOrder === orderToCancel._id ? 1 : 1.02,
+                    }}
+                    whileTap={{
+                      scale: cancellingOrder === orderToCancel._id ? 1 : 0.98,
+                    }}
+                  >
+                    {cancellingOrder === orderToCancel._id ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                        <span>Cancelling...</span>
+                      </>
+                    ) : (
+                      <>
+                        <X size={16} />
+                        <span>Cancel Order</span>
+                      </>
+                    )}
+                  </motion.button>
+                </div>
               </motion.div>
             </motion.div>
           )}
