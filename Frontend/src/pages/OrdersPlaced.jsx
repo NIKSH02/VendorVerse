@@ -12,9 +12,12 @@ import {
   X,
 } from "lucide-react";
 import { useOrders } from "../context/OrderContext";
+import { useOrderChat } from "../context/OrderChatContext";
 import { useNavigate } from "react-router-dom";
 import { ordersAPI } from "../services/ordersAPI";
 import toast from "react-hot-toast";
+import OrderChatButton from "../components/OrderChatButton";
+import OrderChatModal from "../components/OrderChatModal";
 
 // Animation variants
 const fadeInUp = {
@@ -55,6 +58,10 @@ const OrdersPlaced = () => {
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
   const [orderToCancel, setOrderToCancel] = useState(null);
+
+  // Chat states
+  const [showChatModal, setShowChatModal] = useState(false);
+  const [selectedChatOrder, setSelectedChatOrder] = useState(null);
 
   // Fetch orders on component mount
   useEffect(() => {
@@ -188,6 +195,16 @@ const OrdersPlaced = () => {
     setShowCancelModal(false);
     setOrderToCancel(null);
     setCancelReason("");
+  };
+
+  const handleOpenChat = (order) => {
+    setSelectedChatOrder(order);
+    setShowChatModal(true);
+  };
+
+  const handleCloseChat = () => {
+    setShowChatModal(false);
+    setSelectedChatOrder(null);
   };
 
   const filteredOrders = buyerOrders.filter((order) => {
@@ -352,49 +369,54 @@ const OrdersPlaced = () => {
                     <p className="text-sm text-gray-500">
                       Ordered: {new Date(order.createdAt).toLocaleDateString()}
                     </p>
-                    {nextAction && (
-                      <motion.button
-                        className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-colors ${
-                          nextAction.variant === "danger"
-                            ? "bg-red-500 hover:bg-red-600 text-white"
-                            : "bg-orange-500 hover:bg-orange-600 text-white"
-                        } ${
-                          cancellingOrder === order._id
-                            ? "opacity-50 cursor-not-allowed"
-                            : ""
-                        }`}
-                        onClick={() => {
-                          if (cancellingOrder === order._id) return;
+                    <div className="flex items-center space-x-2">
+                      {/* Chat Button */}
+                      <OrderChatButton order={order} onClick={handleOpenChat} />
 
-                          if (nextAction.action === "viewCode") {
-                            handleGetExchangeCode(order);
-                          } else if (nextAction.action === "review") {
-                            handleNavigateToReviews();
-                          } else if (nextAction.action === "cancel") {
-                            handleCancelOrder(order);
-                          }
-                        }}
-                        disabled={cancellingOrder === order._id}
-                        whileHover={{
-                          scale: cancellingOrder === order._id ? 1 : 1.05,
-                        }}
-                        whileTap={{
-                          scale: cancellingOrder === order._id ? 1 : 0.95,
-                        }}
-                      >
-                        {cancellingOrder === order._id ? (
-                          <>
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                            <span>Cancelling...</span>
-                          </>
-                        ) : (
-                          <>
-                            <nextAction.icon size={16} />
-                            <span>{nextAction.label}</span>
-                          </>
-                        )}
-                      </motion.button>
-                    )}
+                      {nextAction && (
+                        <motion.button
+                          className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-colors ${
+                            nextAction.variant === "danger"
+                              ? "bg-red-500 hover:bg-red-600 text-white"
+                              : "bg-orange-500 hover:bg-orange-600 text-white"
+                          } ${
+                            cancellingOrder === order._id
+                              ? "opacity-50 cursor-not-allowed"
+                              : ""
+                          }`}
+                          onClick={() => {
+                            if (cancellingOrder === order._id) return;
+
+                            if (nextAction.action === "viewCode") {
+                              handleGetExchangeCode(order);
+                            } else if (nextAction.action === "review") {
+                              handleNavigateToReviews();
+                            } else if (nextAction.action === "cancel") {
+                              handleCancelOrder(order);
+                            }
+                          }}
+                          disabled={cancellingOrder === order._id}
+                          whileHover={{
+                            scale: cancellingOrder === order._id ? 1 : 1.05,
+                          }}
+                          whileTap={{
+                            scale: cancellingOrder === order._id ? 1 : 0.95,
+                          }}
+                        >
+                          {cancellingOrder === order._id ? (
+                            <>
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                              <span>Cancelling...</span>
+                            </>
+                          ) : (
+                            <>
+                              <nextAction.icon size={16} />
+                              <span>{nextAction.label}</span>
+                            </>
+                          )}
+                        </motion.button>
+                      )}
+                    </div>
                   </div>
                 </motion.div>
               );
@@ -582,6 +604,14 @@ const OrdersPlaced = () => {
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* Order Chat Modal */}
+        <OrderChatModal
+          orderId={selectedChatOrder?._id}
+          orderData={selectedChatOrder}
+          isOpen={showChatModal}
+          onClose={handleCloseChat}
+        />
       </motion.div>
     </DashboardLayout>
   );

@@ -15,8 +15,11 @@ import {
   User,
 } from "lucide-react";
 import { useOrders } from "../context/OrderContext";
+import { useOrderChat } from "../context/OrderChatContext";
 import { useAuth } from "../context/AuthContext";
 import toast from "react-hot-toast";
+import OrderChatButton from "../components/OrderChatButton";
+import OrderChatModal from "../components/OrderChatModal";
 
 // Animation variants
 const fadeInUp = {
@@ -156,6 +159,10 @@ const OrdersReceived = () => {
   const [exchangeInput, setExchangeInput] = useState("");
   const [exchangeOrderId, setExchangeOrderId] = useState(null);
 
+  // Chat states
+  const [showChatModal, setShowChatModal] = useState(false);
+  const [selectedChatOrder, setSelectedChatOrder] = useState(null);
+
   const handleOrderAction = async (orderId, action) => {
     const actionStr = typeof action === "string" ? action : action?.action;
     // For 'complete', always open modal and do NOT call updateOrderStatus here
@@ -235,6 +242,16 @@ const OrdersReceived = () => {
 
   const canAcceptNewOrders = () => {
     return getPendingOrdersCount() < 3;
+  };
+
+  const handleOpenChat = (order) => {
+    setSelectedChatOrder(order);
+    setShowChatModal(true);
+  };
+
+  const handleCloseChat = () => {
+    setShowChatModal(false);
+    setSelectedChatOrder(null);
   };
 
   return (
@@ -403,15 +420,20 @@ const OrdersReceived = () => {
                 </div>
 
                 <div className="flex justify-between items-center pt-4 border-t border-gray-100">
-                  <motion.button
-                    className="flex items-center space-x-2 px-4 py-2 text-gray-600 hover:text-gray-800 border border-gray-300 rounded-lg transition-colors"
-                    onClick={() => viewOrderDetails(order)}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    <Eye size={16} />
-                    <span>View Details</span>
-                  </motion.button>
+                  <div className="flex items-center space-x-2">
+                    <motion.button
+                      className="flex items-center space-x-2 px-4 py-2 text-gray-600 hover:text-gray-800 border border-gray-300 rounded-lg transition-colors"
+                      onClick={() => viewOrderDetails(order)}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      <Eye size={16} />
+                      <span>View Details</span>
+                    </motion.button>
+
+                    {/* Chat Button */}
+                    <OrderChatButton order={order} onClick={handleOpenChat} />
+                  </div>
 
                   <div className="flex space-x-2">
                     {getAvailableActions(order).map((actionItem) => (
@@ -699,6 +721,14 @@ const OrdersReceived = () => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Order Chat Modal */}
+      <OrderChatModal
+        orderId={selectedChatOrder?._id}
+        orderData={selectedChatOrder}
+        isOpen={showChatModal}
+        onClose={handleCloseChat}
+      />
     </DashboardLayout>
   );
 };

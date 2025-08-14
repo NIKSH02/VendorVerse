@@ -52,8 +52,30 @@ app.use(
     ],
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: [
+      "Origin",
+      "X-Requested-With", 
+      "Content-Type", 
+      "Accept",
+      "Authorization",
+      "Cache-Control",
+      "Pragma",
+      "Expires"
+    ],
   })
 );
+
+// Disable caching in development
+if (process.env.NODE_ENV === 'development') {
+  app.use((req, res, next) => {
+    res.set({
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0'
+    });
+    next();
+  });
+}
 // app.options('*', Cors()); // Enable pre-flight for all routes
 
 // Middleware to parse JSON
@@ -105,9 +127,11 @@ const reviewRouter = require("./src/routes/review.route");
 const materialRequestRouter = require("./src/routes/materialRequest.route");
 const notificationRouter = require("./src/routes/notification.route");
 const negotiationRouter = require("./src/routes/negotiation.route");
+const orderChatRouter = require("./src/routes/orderChat.route");
 
 // Import controllers and socket handlers
 const locationChatSocket = require("./src/locationChatSocket.js");
+const orderChatSocket = require("./src/orderChatSocket.js");
 const NotificationSocketHandler = require("./src/utils/notificationSocket.js");
 const notificationService = require("./src/utils/notificationService.js");
 const groupchatroute = require("./src/routes/groupchat.route.js");
@@ -128,6 +152,7 @@ app.use("/api/profile", userProfileRouter); // Mount the user profile router
 app.use("/api/material-requests", materialRequestRouter); // Mount the material request router
 app.use("/api/notifications", notificationRouter); // Mount the notification router
 app.use("/api/negotiations", negotiationRouter); // Mount the negotiation router
+app.use("/api/order-chat", orderChatRouter); // Mount the order chat router
 
 // private chat
 // app.use('/api/chat', chatRoutes); // chating route
@@ -148,6 +173,7 @@ app.get("/health", (req, res) => {
 
 // Socket.io connection handling
 const socketHandler = locationChatSocket(io);
+const orderChatHandler = orderChatSocket(io);
 
 // Initialize notification socket handler
 const notificationSocketHandler = new NotificationSocketHandler(io);
@@ -180,6 +206,12 @@ const gracefulShutdown = (signal) => {
       if (socketHandler && socketHandler.cleanup) {
         socketHandler.cleanup();
         console.log("Socket connections cleaned up");
+      }
+
+      // Cleanup order chat socket connections
+      if (orderChatHandler && orderChatHandler.cleanup) {
+        orderChatHandler.cleanup();
+        console.log("Order chat socket connections cleaned up");
       }
 
       // Cleanup notification socket connections
