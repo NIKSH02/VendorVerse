@@ -26,6 +26,7 @@ import OrdersPlaced from "./pages/OrdersPlaced";
 import Reviews from "./pages/Reviews";
 import Notifications from "./pages/Notifications";
 import NotificationTest from "./pages/NotificationTest";
+import OrderChatPage from "./pages/OrderChatPage";
 import { useAuth } from "./hooks/useAuth";
 import PersonalChatUI from "./pages/PersonalChatUi";
 
@@ -114,6 +115,14 @@ function App() {
                     element={
                       <ProtectedRoute>
                         <LocationChat />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/order-chat/:orderId"
+                    element={
+                      <ProtectedRoute>
+                        <OrderChatPage />
                       </ProtectedRoute>
                     }
                   />

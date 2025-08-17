@@ -22,8 +22,8 @@ const apiClient = axios.create({
     // Disable caching in development
     ...(USE_LOCAL_SERVER && {
       "Cache-Control": "no-cache, no-store, must-revalidate",
-      "Pragma": "no-cache",
-      "Expires": "0",
+      Pragma: "no-cache",
+      Expires: "0",
     }),
   },
   withCredentials: true, // Include cookies for authentication
@@ -39,7 +39,7 @@ apiClient.interceptors.request.use(
     }
 
     // Add cache-busting for development
-    if (USE_LOCAL_SERVER && config.method === 'get') {
+    if (USE_LOCAL_SERVER && config.method === "get") {
       config.params = {
         ...config.params,
         _t: Date.now(), // Add timestamp to prevent caching
@@ -62,7 +62,7 @@ apiClient.interceptors.request.use(
 apiClient.interceptors.response.use(
   (response) => {
     // Log successful responses in development
-    if (import.meta.env.VITE_DEBUG === 'true') {
+    if (import.meta.env.VITE_DEBUG === "true") {
       logApiCall(
         response.config.method,
         response.config.url,
@@ -76,10 +76,10 @@ apiClient.interceptors.response.use(
     const originalRequest = error.config;
 
     // Log errors in development
-    if (import.meta.env.VITE_DEBUG === 'true') {
+    if (import.meta.env.VITE_DEBUG === "true") {
       logApiCall(
-        originalRequest?.method || 'UNKNOWN',
-        originalRequest?.url || 'UNKNOWN',
+        originalRequest?.method || "UNKNOWN",
+        originalRequest?.url || "UNKNOWN",
         originalRequest?.data,
         null,
         error
@@ -115,15 +115,15 @@ apiClient.interceptors.response.use(
 
     // Handle 304 responses (not modified - cached)
     if (error.response?.status === 304) {
-      console.info('📦 Using cached response for:', originalRequest?.url);
+      console.info("📦 Using cached response for:", originalRequest?.url);
       // For 304, we might want to return a success response with cached data
       // or handle it differently based on your app's needs
       return Promise.resolve({
         status: 304,
-        statusText: 'Not Modified',
+        statusText: "Not Modified",
         data: null,
         config: originalRequest,
-        headers: error.response.headers
+        headers: error.response.headers,
       });
     }
 

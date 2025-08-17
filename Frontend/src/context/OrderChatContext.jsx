@@ -66,6 +66,11 @@ export const OrderChatProvider = ({ children }) => {
 
       // Handle receiving messages
       newSocket.on("receiveOrderChatMessage", (messageData) => {
+        console.log("Received order chat message:", messageData);
+        console.log(
+          "Appending to end of messages array for order:",
+          messageData.orderId
+        );
         setMessages((prev) => ({
           ...prev,
           [messageData.orderId]: [
@@ -75,7 +80,7 @@ export const OrderChatProvider = ({ children }) => {
         }));
 
         // Update unread count if user is not the sender
-        if (messageData.senderId !== user.id) {
+        if (messageData.senderId !== (user._id || user.id)) {
           setUnreadCounts((prev) => ({
             ...prev,
             [messageData.orderId]: (prev[messageData.orderId] || 0) + 1,
@@ -83,9 +88,14 @@ export const OrderChatProvider = ({ children }) => {
         }
       });
 
+      // Handle message sent confirmation
+      newSocket.on("orderChatMessageSent", (data) => {
+        console.log("Message sent confirmation:", data);
+      });
+
       // Handle typing indicators
       newSocket.on("orderChatUserTyping", (data) => {
-        if (data.userId !== user.id) {
+        if (data.userId !== (user._id || user.id)) {
           setTypingUsers((prev) => ({
             ...prev,
             [data.orderId]: data.isTyping
@@ -152,8 +162,9 @@ export const OrderChatProvider = ({ children }) => {
   // Join order chat
   const joinOrderChat = (orderId) => {
     if (socket && user && orderId) {
+      console.log("Joining order chat with user:", user);
       socket.emit("joinOrderChat", {
-        userId: user.id,
+        userId: user._id || user.id, // Handle both _id and id
         orderId,
         userToken: user.token,
       });
@@ -178,8 +189,9 @@ export const OrderChatProvider = ({ children }) => {
   // Send message
   const sendMessage = (orderId, message) => {
     if (socket && user && orderId && message.trim()) {
+      console.log("Sending message with user:", user);
       socket.emit("sendOrderChatMessage", {
-        userId: user.id,
+        userId: user._id || user.id, // Handle both _id and id
         orderId,
         message: message.trim(),
         senderName: user.name || user.username,
@@ -191,7 +203,7 @@ export const OrderChatProvider = ({ children }) => {
   const sendTypingIndicator = (orderId, isTyping) => {
     if (socket && user && orderId) {
       socket.emit("orderChatTyping", {
-        userId: user.id,
+        userId: user._id || user.id, // Handle both _id and id
         orderId,
         isTyping,
         senderName: user.name || user.username,
@@ -220,20 +232,28 @@ export const OrderChatProvider = ({ children }) => {
       setLoading(true);
       const response = await orderChatAPI.getOrderChatMessages(orderId, page);
 
+      console.log(
+        `Loading messages for order ${orderId}, page ${page}:`,
+        response.data.messages
+      );
+
       if (page === 1) {
-        // First load - replace messages
+        // First load - replace messages (backend returns oldest to newest)
+        console.log("First load - setting messages:", response.data.messages);
         setMessages((prev) => ({
           ...prev,
           [orderId]: response.data.messages || [],
         }));
       } else {
-        // Load more - prepend messages
+        // Load more (older messages) - prepend to beginning since they're older
+        const olderMessages = response.data.messages || [];
+        const existingMessages = prev[orderId] || [];
+        console.log("Loading more - prepending older messages:", olderMessages);
+        console.log("Existing messages:", existingMessages);
+
         setMessages((prev) => ({
           ...prev,
-          [orderId]: [
-            ...(response.data.messages || []),
-            ...(prev[orderId] || []),
-          ],
+          [orderId]: [...olderMessages, ...existingMessages],
         }));
       }
 

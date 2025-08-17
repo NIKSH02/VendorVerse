@@ -1,7 +1,7 @@
 // API Endpoints Configuration
 export const API_ENDPOINTS = {
   // Base URLs - These are now handled by axios.js
-  
+
   // Auth endpoints
   AUTH: {
     // Email verification (Signup)

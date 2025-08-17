@@ -43,6 +43,22 @@ export const orderChatAPI = {
       throw error;
     }
   },
+
+  // Send message in order chat (REST API fallback)
+  sendOrderChatMessage: async (orderId, message) => {
+    try {
+      const response = await apiClient.post(
+        `/order-chat/order/${orderId}/message`,
+        {
+          message,
+        }
+      );
+      return response.data;
+    } catch (error) {
+      console.error("Error sending order chat message:", error);
+      throw error;
+    }
+  },
 };
 
 export default orderChatAPI;

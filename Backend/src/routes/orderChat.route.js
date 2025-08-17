@@ -3,6 +3,7 @@ const {
   getOrCreateOrderChat,
   getOrderChatMessages,
   getUserOrderChats,
+  sendOrderChatMessage,
 } = require("../controllers/orderChat.controller.js");
 const auth = require("../middlewares/auth.middleware.js");
 
@@ -19,5 +20,8 @@ router.get("/order/:orderId", getOrCreateOrderChat);
 
 // Get messages for specific order chat
 router.get("/order/:orderId/messages", getOrderChatMessages);
+
+// Send message in order chat (REST API fallback)
+router.post("/order/:orderId/message", sendOrderChatMessage);
 
 module.exports = router;

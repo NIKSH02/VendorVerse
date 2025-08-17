@@ -54,24 +54,24 @@ app.use(
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: [
       "Origin",
-      "X-Requested-With", 
-      "Content-Type", 
+      "X-Requested-With",
+      "Content-Type",
       "Accept",
       "Authorization",
       "Cache-Control",
       "Pragma",
-      "Expires"
+      "Expires",
     ],
   })
 );
 
 // Disable caching in development
-if (process.env.NODE_ENV === 'development') {
+if (process.env.NODE_ENV === "development") {
   app.use((req, res, next) => {
     res.set({
-      'Cache-Control': 'no-cache, no-store, must-revalidate',
-      'Pragma': 'no-cache',
-      'Expires': '0'
+      "Cache-Control": "no-cache, no-store, must-revalidate",
+      Pragma: "no-cache",
+      Expires: "0",
     });
     next();
   });

@@ -102,9 +102,16 @@ const orderChatSocket = (io) => {
     // Handle sending messages in order chat
     socket.on("sendOrderChatMessage", async (data) => {
       try {
+        console.log("Received sendOrderChatMessage:", data);
         const { userId, orderId, message, senderName } = data;
 
         if (!userId || !orderId || !message || !senderName) {
+          console.log("Missing required fields:", {
+            userId,
+            orderId,
+            message,
+            senderName,
+          });
           socket.emit("orderChatError", { message: "Missing required fields" });
           return;
         }
@@ -124,37 +131,66 @@ const orderChatSocket = (io) => {
         // Verify order and user access
         const order = await Order.findById(orderId);
         if (!order) {
+          console.log("Order not found:", orderId);
           socket.emit("orderChatError", { message: "Order not found" });
           return;
         }
 
+        console.log("Order found:", {
+          orderId: order._id.toString(),
+          buyerId: order.buyerId.toString(),
+          sellerId: order.sellerId.toString(),
+          status: order.status,
+        });
+
+        // Check if user is buyer or seller
+        const userIdString = userId.toString();
         if (
-          order.buyerId.toString() !== userId &&
-          order.sellerId.toString() !== userId
+          order.buyerId.toString() !== userIdString &&
+          order.sellerId.toString() !== userIdString
         ) {
+          console.log(
+            "Unauthorized access - User:",
+            userIdString,
+            "Order buyer:",
+            order.buyerId.toString(),
+            "Order seller:",
+            order.sellerId.toString()
+          );
           socket.emit("orderChatError", { message: "Unauthorized" });
           return;
         }
 
         // Determine sender type
         const senderType =
-          order.buyerId.toString() === userId ? "buyer" : "seller";
+          order.buyerId.toString() === userIdString ? "buyer" : "seller";
         const receiverType = senderType === "buyer" ? "seller" : "buyer";
+
+        console.log("User authorization successful:", {
+          userId: userIdString,
+          senderType,
+          receiverType,
+        });
 
         // Get or create order chat
         let orderChat = await OrderChat.findOne({ orderId });
+        console.log("Existing orderChat found:", orderChat ? "YES" : "NO");
+
         if (!orderChat) {
+          console.log("Creating new orderChat...");
           orderChat = new OrderChat({
             orderId,
             buyerId: order.buyerId,
             sellerId: order.sellerId,
             messages: [],
           });
+          await orderChat.save();
+          console.log("New orderChat created");
         }
 
         // Create new message
         const newMessage = {
-          senderId: userId,
+          senderId: userIdString, // Use string version
           senderName,
           senderType,
           message: message.trim(),
@@ -162,14 +198,20 @@ const orderChatSocket = (io) => {
           isRead: false,
         };
 
+        console.log("Creating new message:", newMessage);
+
         // Add message to chat
         orderChat.messages.push(newMessage);
+        console.log(
+          "Message added to chat. Total messages:",
+          orderChat.messages.length
+        );
 
         // Update last message
         orderChat.lastMessage = {
           message: message.trim(),
           timestamp: newMessage.timestamp,
-          senderId: userId,
+          senderId: userIdString, // Use string version
         };
 
         // Update unread count for receiver
@@ -179,13 +221,18 @@ const orderChatSocket = (io) => {
           orderChat.unreadCount.buyerUnread += 1;
         }
 
+        console.log("Saving orderChat to database...");
         // Save to database
         await orderChat.save();
+        console.log(
+          "OrderChat saved successfully. Final message count:",
+          orderChat.messages.length
+        );
 
         // Prepare message for broadcast
         const messageData = {
           _id: orderChat.messages[orderChat.messages.length - 1]._id,
-          senderId: userId,
+          senderId: userIdString, // Use string version
           senderName,
           senderType,
           message: message.trim(),
@@ -193,9 +240,22 @@ const orderChatSocket = (io) => {
           orderId,
         };
 
+        console.log(
+          "Broadcasting message to room:",
+          `order_chat_${orderId}`,
+          messageData
+        );
+
         // Broadcast to all users in the order chat room
         const roomName = `order_chat_${orderId}`;
         io.to(roomName).emit("receiveOrderChatMessage", messageData);
+
+        // Confirm message sent to sender
+        socket.emit("orderChatMessageSent", {
+          success: true,
+          messageId: messageData._id,
+          timestamp: messageData.timestamp,
+        });
 
         // Send notification to the other user if they're not in the chat
         const otherUserId =
@@ -227,7 +287,11 @@ const orderChatSocket = (io) => {
         );
       } catch (error) {
         console.error("Error in sendOrderChatMessage:", error);
-        socket.emit("orderChatError", { message: "Failed to send message" });
+        console.error("Error stack:", error.stack);
+        socket.emit("orderChatError", {
+          message: "Failed to send message",
+          details: error.message,
+        });
       }
     });
 

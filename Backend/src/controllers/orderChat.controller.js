@@ -8,7 +8,7 @@ const User = require("../models/User.model.js");
 // Create or get existing chat for an order
 const getOrCreateOrderChat = asyncHandler(async (req, res) => {
   const { orderId } = req.params;
-  const userId = req.user.id;
+  const userId = req.user._id || req.user.id; // Handle both _id and id
 
   if (!orderId) {
     throw new ApiError(400, "Order ID is required");
@@ -24,9 +24,10 @@ const getOrCreateOrderChat = asyncHandler(async (req, res) => {
   }
 
   // Check if user is either buyer or seller
+  const userIdString = userId.toString();
   if (
-    order.buyerId._id.toString() !== userId &&
-    order.sellerId._id.toString() !== userId
+    order.buyerId._id.toString() !== userIdString &&
+    order.sellerId._id.toString() !== userIdString
   ) {
     throw new ApiError(403, "You are not authorized to access this chat");
   }
@@ -78,7 +79,7 @@ const getOrCreateOrderChat = asyncHandler(async (req, res) => {
 // Get chat messages for an order
 const getOrderChatMessages = asyncHandler(async (req, res) => {
   const { orderId } = req.params;
-  const userId = req.user.id;
+  const userId = req.user._id || req.user.id; // Handle both _id and id
   const { page = 1, limit = 50 } = req.query;
 
   if (!orderId) {
@@ -91,35 +92,76 @@ const getOrderChatMessages = asyncHandler(async (req, res) => {
     throw new ApiError(404, "Order not found");
   }
 
-  if (
-    order.buyerId.toString() !== userId &&
-    order.sellerId.toString() !== userId
-  ) {
+  // Ensure userId is a string for comparison
+  const userIdString = userId?.toString();
+  const buyerIdString = order.buyerId?.toString();
+  const sellerIdString = order.sellerId?.toString();
+
+  if (buyerIdString !== userIdString && sellerIdString !== userIdString) {
     throw new ApiError(403, "You are not authorized to access this chat");
   }
 
   const orderChat = await OrderChat.findOne({ orderId });
-  if (!orderChat) {
-    throw new ApiError(404, "Chat not found for this order");
-  }
 
-  // Calculate pagination
+  if (!orderChat) {
+    // Create new chat if it doesn't exist (same logic as getOrCreateOrderChat)
+    const newOrderChat = new OrderChat({
+      orderId: order._id,
+      buyerId: order.buyerId,
+      sellerId: order.sellerId,
+      messages: [],
+    });
+
+    await newOrderChat.save();
+
+    // Return empty messages for new chat
+    return res.status(200).json(
+      new ApiResponse(
+        200,
+        {
+          messages: [],
+          pagination: {
+            currentPage: parseInt(page),
+            totalMessages: 0,
+            hasMore: false,
+          },
+          unreadCount: {
+            buyerUnread: 0,
+            sellerUnread: 0,
+          },
+        },
+        "New chat created, no messages yet"
+      )
+    );
+  } // Calculate pagination for existing chat
   const skip = (page - 1) * limit;
   const totalMessages = orderChat.messages.length;
 
-  // Get paginated messages (most recent first)
-  const messages = orderChat.messages
-    .slice(-skip - limit, totalMessages - skip)
-    .reverse();
+  // Get paginated messages (chronological order - oldest to newest)
+  // For first page, get the most recent messages
+  let messages;
+  if (page === 1) {
+    // Get the last 'limit' messages in chronological order
+    messages = orderChat.messages.slice(-limit);
+  } else {
+    // For pagination, get older messages
+    const startIndex = Math.max(0, totalMessages - skip - limit);
+    const endIndex = totalMessages - skip;
+    messages = orderChat.messages.slice(startIndex, endIndex);
+  }
+
+  // Ensure messages are sorted by timestamp (oldest to newest)
+  messages.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 
   // Mark messages as read for the current user
-  const userType = order.buyerId.toString() === userId ? "buyer" : "seller";
+  const userType =
+    order.buyerId.toString() === userIdString ? "buyer" : "seller";
 
   // Update unread count
-  if (userType === "buyer" && orderChat.unreadCount.buyerUnread > 0) {
+  if (userType === "buyer" && orderChat.unreadCount?.buyerUnread > 0) {
     orderChat.unreadCount.buyerUnread = 0;
     await orderChat.save();
-  } else if (userType === "seller" && orderChat.unreadCount.sellerUnread > 0) {
+  } else if (userType === "seller" && orderChat.unreadCount?.sellerUnread > 0) {
     orderChat.unreadCount.sellerUnread = 0;
     await orderChat.save();
   }
@@ -143,7 +185,7 @@ const getOrderChatMessages = asyncHandler(async (req, res) => {
 
 // Get all chats for a user
 const getUserOrderChats = asyncHandler(async (req, res) => {
-  const userId = req.user.id;
+  const userId = req.user._id || req.user.id; // Handle both _id and id
   const { page = 1, limit = 20 } = req.query;
 
   const skip = (page - 1) * limit;
@@ -190,8 +232,100 @@ const getUserOrderChats = asyncHandler(async (req, res) => {
   );
 });
 
+// Send a message in order chat (REST API fallback)
+const sendOrderChatMessage = asyncHandler(async (req, res) => {
+  const { orderId } = req.params;
+  const { message } = req.body;
+  const userId = req.user._id || req.user.id;
+
+  if (!orderId || !message) {
+    throw new ApiError(400, "Order ID and message are required");
+  }
+
+  if (message.trim().length === 0) {
+    throw new ApiError(400, "Message cannot be empty");
+  }
+
+  if (message.length > 1000) {
+    throw new ApiError(400, "Message too long (max 1000 characters)");
+  }
+
+  // Verify order and user access
+  const order = await Order.findById(orderId);
+  if (!order) {
+    throw new ApiError(404, "Order not found");
+  }
+
+  const userIdString = userId?.toString();
+  const buyerIdString = order.buyerId?.toString();
+  const sellerIdString = order.sellerId?.toString();
+
+  if (buyerIdString !== userIdString && sellerIdString !== userIdString) {
+    throw new ApiError(403, "You are not authorized to access this chat");
+  }
+
+  // Determine sender type
+  const senderType = buyerIdString === userIdString ? "buyer" : "seller";
+
+  // Get or create order chat
+  let orderChat = await OrderChat.findOne({ orderId });
+  if (!orderChat) {
+    orderChat = new OrderChat({
+      orderId: order._id,
+      buyerId: order.buyerId,
+      sellerId: order.sellerId,
+      messages: [],
+    });
+  }
+
+  // Create new message
+  const newMessage = {
+    senderId: userIdString,
+    senderName: req.user.name || req.user.username,
+    senderType,
+    message: message.trim(),
+    timestamp: new Date(),
+    isRead: false,
+  };
+
+  // Add message to chat
+  orderChat.messages.push(newMessage);
+
+  // Update last message
+  orderChat.lastMessage = {
+    message: message.trim(),
+    timestamp: newMessage.timestamp,
+    senderId: userIdString,
+  };
+
+  // Update unread count for receiver
+  if (senderType === "buyer") {
+    orderChat.unreadCount.sellerUnread += 1;
+  } else {
+    orderChat.unreadCount.buyerUnread += 1;
+  }
+
+  // Save to database
+  await orderChat.save();
+
+  // Return the sent message
+  const sentMessage = orderChat.messages[orderChat.messages.length - 1];
+
+  res.status(200).json(
+    new ApiResponse(
+      200,
+      {
+        message: sentMessage,
+        totalMessages: orderChat.messages.length,
+      },
+      "Message sent successfully"
+    )
+  );
+});
+
 module.exports = {
   getOrCreateOrderChat,
   getOrderChatMessages,
   getUserOrderChats,
+  sendOrderChatMessage,
 };
